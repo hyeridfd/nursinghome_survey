@@ -286,7 +286,7 @@ def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
     )
     
     st.markdown("---")
-    st.markdown("### 2. 선호하는 수산물 조리 형태 (복수 선택 가능)")
+    st.markdown("### 2. 드시고 싶은 조리 형태의 수산물 활용 고령친화우수식품을 모두 선택해주세요. (복수 선택 가능)")
     
     cooking_types = [
         "구이",
@@ -314,7 +314,7 @@ def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
                 selected_cooking_types.append(cooking_type)
     
     st.markdown("---")
-    st.markdown("### 3. 선호하는 수산물 종류 (복수 선택 가능)")
+    st.markdown("### 3. 드시고 싶은 종류의 수산물 활용 고령친화우수식품을 모두 선택해주세요. (복수 선택 가능)")
     
     seafood_types = [
         "고등어",
