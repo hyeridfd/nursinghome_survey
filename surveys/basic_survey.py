@@ -47,14 +47,14 @@ def show_page1():
     
     with col1:
         gender = st.radio(
-            "1. 성별",
+            "1. 귀하의 성별은 선택해 주십시오",
             options=["남자", "여자"],
             index=0 if data.get('gender') == "남자" else 1 if data.get('gender') == "여자" else 0,
             key="gender"
         )
         
         age = st.number_input(
-            "2. 연령 (만 나이)",
+            "2. 귀하의 연령을 작성해 주십시오(만 나이)",
             min_value=0,
             max_value=120,
             value=int(data.get('age', 0)) if data.get('age') else 0,
@@ -62,30 +62,30 @@ def show_page1():
         )
         
         care_grade = st.selectbox(
-            "3. 노인장기요양등급",
-            options=["인지지원등급", "5등급", "4등급", "3등급", "2등급", "1등급", "기타"],
+            "3. 다음 중 귀하가 받으신 장기요양등급을 선택해 주십시오",
+            options=["1등급", "2등급", "3등급", "4등급 이상"],
             index=0,
             key="care_grade"
         )
     
     with col2:
         residence_duration = st.selectbox(
-            "4. 시설 거주 기간",
-            options=["1년 미만", "1년 이상 ~ 2년 미만", "2년 이상 ~ 3년 미만", "3년 이상"],
+            "4. 귀하가 현재 요양시설에 거주하신 기간은 얼마나 되셨습니까?",
+            options=["1년 미만", "1년 이상 ~ 3년 미만", "3년 이상 ~ 5년 미만", "5년 이상 ~ 10년 미만", "10년 이상"],
             index=0,
             key="residence_duration"
         )
         
         education = st.selectbox(
-            "5. 교육수준",
-            options=["무학", "초등학교", "중학교", "고등학교", "대학교 이상"],
+            "5. 귀하의 최종 학력을 선택해 주십시오",
+            options=["무학", "초등학교 졸업", "중학교 졸업", "고등학교 졸업", "대학교(전문대 포함) 졸업 이상"],
             index=0,
             key="education"
         )
         
         drinking_smoking = st.selectbox(
-            "6. 음주/흡연",
-            options=["안함", "과거에 했음", "현재 하고 있음"],
+            "6. 귀하는 음주 및 흡연을 하고 계십니까?",
+            options=["둘 다 안함", "과거에 음주를 했음", "과거에 흡연을 했음", "현재 음주하고 있음", "현재 흡연하고 있음", "둘 다 하고 있음"],
             index=0,
             key="drinking_smoking"
         )
@@ -108,14 +108,12 @@ def show_page2():
     
     data = st.session_state.basic_data
     
-    st.write("**7. 현재 앓고 있는 질환 (복수 선택 가능)**")
+    st.write("**7. 귀하가 현재 보유하고 계신 질환을 모두 선택해 주십시오**")
     
-    disease_options = [
-        "고혈압", "당뇨병", "고지혈증", "심혈관 질환(심근경색, 협심증, 부정맥 등)",
+    disease_options = ["없음", "고혈압", "당뇨병", "고지혈증", "심혈관 질환(심근경색, 협심증, 부정맥 등)",
         "뇌혈관 질환(뇌졸중, 뇌경색, 뇌출혈 등)", "갑상선 질환", "골다공증", "골관절염/류마티스 관절염",
         "암", "만성 폐쇄성 폐질환", "신장 질환", "간 질환", "위장 질환", "빈혈", "치매",
-        "파킨슨병", "우울증", "기타"
-    ]
+        "파킨슨병", "우울증", "기타"]
     
     existing_diseases = data.get('diseases', [])
     if isinstance(existing_diseases, str):
@@ -139,7 +137,7 @@ def show_page2():
     st.write("**8. 현재 복용 중인 약물 (복수 선택 가능)**")
     
     medication_options = [
-        "고혈압약", "당뇨병약", "고지혈증약", "항혈전제", "심장약",
+        "복용하지 않음", "고혈압약", "당뇨병약", "고지혈증약", "항혈전제", "심장약",
         "갑상선약", "골다공증약", "진통소염제", "항암제", "천식약",
         "신장약", "간약", "위장약", "철분제", "치매약",
         "파킨슨약", "항우울제", "기타"
@@ -166,7 +164,7 @@ def show_page2():
     
     medication_count = st.selectbox(
         "9. 약물 복용 개수",
-        options=["5개 미만", "5개 이상"],
+        options=["1개", "2개", "3개", "4개 이상"],
         index=0,
         key="medication_count"
     )
@@ -190,37 +188,37 @@ def show_page3():
     
     with col1:
         chewing_difficulty = st.radio(
-            "10. 씹기 어려움",
+            "10. 귀하는 음식을 씹는 데 어려움이 있습니까?",
             options=["예", "아니오"],
             index=0 if data.get('chewing_difficulty') == True else 1,
             key="chewing_difficulty"
         )
         
         swallowing_difficulty = st.radio(
-            "11. 삼키기 어려움",
+            "11. 귀하는 음식을 삼키는 데 어려움이 있습니까?",
             options=["예", "아니오"],
             index=0 if data.get('swallowing_difficulty') == True else 1,
             key="swallowing_difficulty"
         )
         
         food_preparation_method = st.selectbox(
-            "12. 음식 조리 형태",
-            options=["일반식", "잘게 썬 음식", "갈은 음식", "믹서 음식(유동식)", "기타"],
+            "12. 씹기 또는 삼키기에 어려움이 있다면, 귀하가 해당하는 음식 섭취 방법을 선택해 주십시오",
+            options=["어렵지 않음", "일반식", "잘게 썬 음식", "갈은 음식", "믹서 음식(유동식)", "기타"],
             index=0,
             key="food_preparation_method"
         )
     
     with col2:
         eating_independence = st.selectbox(
-            "13. 식사 독립성",
-            options=["독립적", "부분 도움 필요", "전적으로 도움 필요"],
+            "13. 귀하는 평소 식사하실 때 어떻게 식사하십니까?",
+            options=["스스로 식사할 수 있음", "요양보호사 등의 부분적인 도움 필요", "요양보호사 등의 전적인 도움 필요"],
             index=0,
             key="eating_independence"
         )
         
         meal_type = st.selectbox(
-            "14. 식사 유형",
-            options=["일반식", "치료식(당뇨식, 저염식 등)", "연하곤란식", "기타"],
+            "14. 귀하는 평소 식사하실 때 어떤 형태의 식사를 드십니까?",
+            options=["일반식", "다진식", "연하식", "기타"],
             index=0,
             key="meal_type"
         )
@@ -335,7 +333,7 @@ def show_page5(supabase, elderly_id, surveyor_id, nursing_home_id):
     
     with col1:
         facility_capacity = st.number_input(
-            "22. 시설 정원 (명)",
+            "22. 시설 규모 (어르신 수용 인원(명))",
             min_value=0,
             max_value=1000,
             value=int(data.get('facility_capacity', 0)) if data.get('facility_capacity') else 0,
@@ -344,8 +342,8 @@ def show_page5(supabase, elderly_id, surveyor_id, nursing_home_id):
         
         facility_location = st.selectbox(
             "23. 시설 소재지",
-            options=["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
-                    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"],
+            options=["수도권(서울, 경기, 인천)", "충청권(대전, 세종, 충남, 충북)", "호남권(광주, 전남, 전북)", "영남권(부산, 대구, 울산, 경남, 경북)", "강원권", "제주권"]
+            , 
             index=0,
             key="facility_location"
         )
