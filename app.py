@@ -2,13 +2,6 @@ import streamlit as st
 import os
 import sys
 
-# Streamlit secrets 우선, 로컬에서는 dotenv 사용
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except:
-    pass  # Streamlit Cloud에서는 dotenv 불필요
-
 from supabase import create_client, Client
 import pandas as pd
 from datetime import datetime
@@ -25,11 +18,6 @@ def init_supabase():
     if hasattr(st, 'secrets') and 'SUPABASE_URL' in st.secrets:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
-    else:
-        # 로컬 환경변수 사용
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_KEY")
-    
     if not url or not key:
         st.error("⚠️ Supabase 설정이 필요합니다. Streamlit Cloud의 Secrets 또는 로컬 .env 파일을 확인해주세요.")
         st.stop()
