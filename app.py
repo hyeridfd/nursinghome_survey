@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from supabase import create_client, Client
 import pandas as pd
+from dotenv import load_dotenv
 from datetime import datetime
 import sys
 
