@@ -1,33 +1,46 @@
 import streamlit as st
 import os
+import sys
+
+# Streamlit secrets 우선, 로컬에서는 dotenv 사용
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except:
+    pass  # Streamlit Cloud에서는 dotenv 불필요
+
 from supabase import create_client, Client
 import pandas as pd
-from dotenv import load_dotenv
 from datetime import datetime
-import sys
 
 # surveys 모듈 import
 from surveys.basic_survey import show_basic_survey
 from surveys.nutrition_survey import show_nutrition_survey
 from surveys.satisfaction_survey import show_satisfaction_survey
 
-# Load environment variables
-load_dotenv()
-
 # Supabase 초기화
 @st.cache_resource
 def init_supabase():
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    # Streamlit secrets 우선 확인
+    if hasattr(st, 'secrets') and 'SUPABASE_URL' in st.secrets:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+    else:
+        # 로컬 환경변수 사용
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
+    
     if not url or not key:
-        st.error("Supabase URL 또는 KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+        st.error("⚠️ Supabase 설정이 필요합니다. Streamlit Cloud의 Secrets 또는 로컬 .env 파일을 확인해주세요.")
         st.stop()
+    
     return create_client(url, key)
 
 try:
     supabase = init_supabase()
 except Exception as e:
-    st.error(f"Supabase 연결 실패: {str(e)}")
+    st.error(f"❌ Supabase 연결 실패: {str(e)}")
+    st.info("💡 Streamlit Cloud Settings → Secrets에 SUPABASE_URL과 SUPABASE_KEY를 추가했는지 확인해주세요.")
     st.stop()
 
 # 페이지 설정
@@ -136,7 +149,13 @@ def login_page():
     with st.expander("관리자 로그인"):
         admin_password = st.text_input("관리자 비밀번호", type="password", key="admin_pw")
         if st.button("관리자 로그인"):
-            if admin_password == os.getenv("ADMIN_PASSWORD", "admin123"):
+            # Streamlit secrets 우선 확인
+            if hasattr(st, 'secrets') and 'ADMIN_PASSWORD' in st.secrets:
+                correct_password = st.secrets["ADMIN_PASSWORD"]
+            else:
+                correct_password = os.getenv("ADMIN_PASSWORD", "admin123")
+            
+            if admin_password == correct_password:
                 st.session_state.is_admin = True
                 st.session_state.logged_in = True
                 st.success("관리자 로그인 성공!")
