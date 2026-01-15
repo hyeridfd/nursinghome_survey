@@ -752,45 +752,189 @@ def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
                 save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id)
 
 def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
-    """설문 데이터 저장"""
+    """
+    기초 조사 데이터를 Supabase에 저장 (K-MBI 텍스트→숫자 변환 포함)
+    """
     try:
-        data = st.session_state.basic_data.copy()
-        data.update({
+        data = st.session_state.basic_data
+        
+        # === K-MBI 텍스트→점수 매핑 ===
+        kmbi_score_mapping = {
+            "과제를 수행할 수 없는 경우": 0,
+            "최대의 도움이 필요한 경우": 1,
+            "중등도의 도움이 필요한 경우": 2,
+            "최소한의 도움이 필요하거나 감시가 필요한 경우": 3,
+            "완전히 독립적인 경우": 4
+        }
+        
+        # === 1단계: 테이블 스키마 조회 ===
+        try:
+            schema_check = supabase.table('basic_survey').select('*').limit(1).execute()
+            available_columns = set(schema_check.data[0].keys()) if schema_check.data else set()
+        except:
+            available_columns = {
+                'elderly_id', 'surveyor_id', 'nursing_home_id', 'updated_at',
+                'gender', 'age', 'care_grade', 'residence_duration', 'education',
+                'drinking_smoking', 'diseases', 'medications', 'medication_count',
+                'chewing_difficulty', 'swallowing_difficulty', 'food_preparation_method',
+                'eating_independence', 'meal_type', 'height', 'weight',
+                'waist_circumference', 'systolic_bp', 'diastolic_bp',
+                'facility_capacity', 'facility_location', 'nutritionist_present'
+            }
+        
+        # === 2단계: 기본 필수 데이터 ===
+        survey_data = {
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
             'updated_at': datetime.now().isoformat()
-        })
+        }
         
-        # 기존 데이터 확인
-        response = supabase.table('basic_survey').select('id').eq('elderly_id', elderly_id).execute()
+        # === 3단계: 기존 필드 추가 ===
+        field_mapping = {
+            'gender': 'gender',
+            'age': 'age',
+            'care_grade': 'care_grade',
+            'residence_duration': 'residence_duration',
+            'education': 'education',
+            'drinking_smoking': 'drinking_smoking',
+            'chewing_difficulty': 'chewing_difficulty',
+            'swallowing_difficulty': 'swallowing_difficulty',
+            'food_preparation_method': 'food_preparation_method',
+            'eating_independence': 'eating_independence',
+            'meal_type': 'meal_type',
+            'height': 'height',
+            'weight': 'weight',
+            'waist_circumference': 'waist_circumference',
+            'systolic_bp': 'systolic_bp',
+            'diastolic_bp': 'diastolic_bp',
+            'facility_capacity': 'facility_capacity',
+            'facility_location': 'facility_location',
+            'nutritionist_present': 'nutritionist_present',
+            'medication_count': 'medication_count'
+        }
         
-        if response.data:
-            # 업데이트
-            supabase.table('basic_survey').update(data).eq('elderly_id', elderly_id).execute()
+        for field_key, column_name in field_mapping.items():
+            if field_key in data and column_name in available_columns:
+                survey_data[column_name] = data[field_key]
+        
+        # === 4단계: JSON 필드 처리 ===
+        if 'diseases' in data and 'diseases' in available_columns:
+            survey_data['diseases'] = json.dumps(data['diseases'])
+        if 'medications' in data and 'medications' in available_columns:
+            survey_data['medications'] = json.dumps(data['medications'])
+        
+        # === 5단계: K-MBI 데이터 (텍스트→숫자 변환) ===
+        if 'k_mbi_score' in available_columns:
+            if 'k_mbi_score' in data:
+                survey_data['k_mbi_score'] = data['k_mbi_score']
+            
+            # K-MBI 각 항목 변환 (텍스트 → 점수)
+            for i in range(1, 12):
+                col_name = f'kmbi_{i}'
+                if col_name in available_columns and col_name in data:
+                    value = data[col_name]
+                    # 텍스트인 경우 점수로 변환
+                    if isinstance(value, str):
+                        survey_data[col_name] = kmbi_score_mapping.get(value, 0)
+                    else:
+                        survey_data[col_name] = value
         else:
-            # 새로 추가
-            supabase.table('basic_survey').insert(data).execute()
+            st.warning("⚠️ K-MBI 데이터는 저장되지 않았습니다. (데이터베이스 컬럼 없음)")
         
-        # 진행 상황 업데이트
-        supabase.table('survey_progress').update({
-            'basic_survey_completed': True,
-            'last_updated': datetime.now().isoformat()
-        }).eq('elderly_id', elderly_id).execute()
+        # === 6단계: MMSE-K 데이터 ===
+        mmse_fields = [
+            'mmse_score', 'mmse_time_orientation', 'mmse_place_orientation',
+            'mmse_registration', 'mmse_attention_calculation', 'mmse_recall',
+            'mmse_naming', 'mmse_repetition', 'mmse_comprehension',
+            'mmse_reading', 'mmse_writing', 'mmse_drawing'
+        ]
         
-        st.success("✅ 기초 조사표가 저장되었습니다!")
+        mmse_saved = False
+        for field in mmse_fields:
+            if field in available_columns and field in data:
+                survey_data[field] = data[field]
+                mmse_saved = True
+        
+        if not mmse_saved and any(f in data for f in mmse_fields):
+            st.warning("⚠️ MMSE-K 데이터는 저장되지 않았습니다. (데이터베이스 컬럼 없음)")
+        
+        # === 7단계: 기존 데이터 확인 ===
+        existing = supabase.table('basic_survey') \
+            .select('id') \
+            .eq('elderly_id', elderly_id) \
+            .execute()
+        
+        # === 8단계: 저장 실행 ===
+        if existing.data:
+            result = supabase.table('basic_survey') \
+                .update(survey_data) \
+                .eq('elderly_id', elderly_id) \
+                .execute()
+        else:
+            result = supabase.table('basic_survey') \
+                .insert(survey_data) \
+                .execute()
+        
+        # === 9단계: 진행 상태 업데이트 ===
+        try:
+            supabase.table('survey_progress') \
+                .update({
+                    'basic_survey_completed': True,
+                    'last_updated': datetime.now().isoformat()
+                }) \
+                .eq('elderly_id', elderly_id) \
+                .execute()
+        except Exception as e:
+            st.warning(f"진행 상태 업데이트 실패: {str(e)}")
+        
+        # === 10단계: 성공 처리 ===
+        st.success("✅ 기초 조사가 성공적으로 저장되었습니다!")
+        
+        # 저장된 필드 요약
+        with st.expander("📊 저장된 데이터 항목"):
+            saved_fields = [k for k in survey_data.keys() 
+                          if k not in ['elderly_id', 'surveyor_id', 'nursing_home_id', 'updated_at']]
+            st.write(f"총 {len(saved_fields)}개 항목 저장됨")
+            
+            # K-MBI 점수 표시
+            if 'k_mbi_score' in survey_data:
+                st.metric("K-MBI 총점", f"{survey_data['k_mbi_score']}/100점")
+            
+            # MMSE-K 점수 표시
+            if 'mmse_score' in survey_data:
+                st.metric("MMSE-K 총점", f"{survey_data['mmse_score']}/30점")
+        
         st.balloons()
         
         # 세션 초기화
-        del st.session_state.basic_data
-        del st.session_state.basic_page
+        if 'basic_data' in st.session_state:
+            del st.session_state.basic_data
+        if 'basic_page' in st.session_state:
+            del st.session_state.basic_page
         st.session_state.current_survey = None
         
-        if st.button("대시보드로 돌아가기"):
+        # 대시보드로 돌아가기 버튼
+        if st.button("📊 대시보드로 돌아가기", type="primary"):
             st.rerun()
-        
+            
     except Exception as e:
-        st.error(f"저장 중 오류가 발생했습니다: {str(e)}")
+        st.error(f"❌ 저장 중 오류 발생: {str(e)}")
+        
+        with st.expander("🔍 오류 상세 정보"):
+            st.write("**저장 시도한 데이터:**")
+            # 안전한 출력을 위해 변환
+            display_data = {}
+            for k, v in survey_data.items():
+                if isinstance(v, (list, dict)):
+                    display_data[k] = str(v)
+                else:
+                    display_data[k] = v
+            st.json(display_data)
+            
+            st.write("**오류 메시지:**")
+            st.code(str(e))
+
 
 def navigation_buttons():
     """페이지 이동 버튼"""
