@@ -313,170 +313,179 @@ def show_page5_kmbi():
     """5페이지: K-MBI (한국판 수정 바델 지수) 평가"""
     st.subheader("K-MBI (한국판 수정 바델 지수) 평가")
     
-    st.info("📝 일상생활 수행능력을 평가합니다. 각 항목에서 해당하는 점수를 선택해주세요.")
+    st.info("📝 일상생활 수행능력을 평가합니다. 각 항목에서 해당하는 수준을 선택해주세요.")
     
     data = st.session_state.basic_data
     
+    # 5단계 평가 옵션
+    performance_levels = [
+        "과제를 수행할 수 없는 경우",
+        "최대의 도움이 필요한 경우",
+        "중등도의 도움이 필요한 경우",
+        "최소의 도움이나 감독이 필요한 경우",
+        "완전히 독립적인 경우"
+    ]
+    
+    # 점수 매핑 (내부 계산용)
+    score_mapping = {
+        "과제를 수행할 수 없는 경우": 0,
+        "최대의 도움이 필요한 경우": 1,
+        "중등도의 도움이 필요한 경우": 2,
+        "최소의 도움이나 감독이 필요한 경우": 3,
+        "완전히 독립적인 경우": 4
+    }
+    
     # K-MBI 평가 항목
     kmbi_items = [
-        {
-            "name": "개인위생",
-            "options": [
-                ("0점", "타인의 도움이 필요함"),
-                ("1점", "스스로 가능함 (세수, 머리 빗기, 칫솔질 등)")
-            ],
-            "key": "kmbi_1"
-        },
-        {
-            "name": "목욕하기",
-            "options": [
-                ("0점", "타인의 도움이 필요함"),
-                ("1점", "스스로 가능함")
-            ],
-            "key": "kmbi_2"
-        },
-        {
-            "name": "식사하기",
-            "options": [
-                ("0점", "타인의 도움이 필요함"),
-                ("2점", "부분적 도움 필요 (음식 자르기 등)"),
-                ("5점", "스스로 가능함"),
-                ("8점", "정상 (적당한 시간 내 식사)"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_3"
-        },
-        {
-            "name": "용변처리",
-            "options": [
-                ("0점", "타인의 도움이 필요함"),
-                ("2점", "부분적 도움 필요"),
-                ("5점", "스스로 가능함"),
-                ("8점", "정상"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_4"
-        },
-        {
-            "name": "계단 오르기",
-            "options": [
-                ("0점", "불가능"),
-                ("2점", "상당한 도움 필요"),
-                ("5점", "부분적 도움 필요"),
-                ("8점", "스스로 가능함"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_5"
-        },
-        {
-            "name": "옷 입기",
-            "options": [
-                ("0점", "타인의 도움이 필요함"),
-                ("2점", "부분적 도움 필요 (50% 이상 스스로)"),
-                ("5점", "스스로 가능함"),
-                ("8점", "정상"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_6"
-        },
-        {
-            "name": "대변조절",
-            "options": [
-                ("0점", "조절 불가능 또는 도움 필요"),
-                ("2점", "가끔 실수 (주 1회 미만)"),
-                ("5점", "조절 가능"),
-                ("8점", "정상"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_7"
-        },
-        {
-            "name": "소변조절",
-            "options": [
-                ("0점", "조절 불가능 또는 도뇨관 사용"),
-                ("2점", "가끔 실수 (주 1회 미만)"),
-                ("5점", "조절 가능"),
-                ("8점", "정상"),
-                ("10점", "완전 독립")
-            ],
-            "key": "kmbi_8"
-        },
-        {
-            "name": "보행",
-            "options": [
-                ("0점", "불가능"),
-                ("3점", "휠체어로 이동 가능"),
-                ("8점", "도움 필요 (1인 부축)"),
-                ("12점", "스스로 가능 (보조기구 사용)"),
-                ("15점", "완전 독립")
-            ],
-            "key": "kmbi_9"
-        },
-        {
-            "name": "의자/침대 이동",
-            "options": [
-                ("0점", "불가능 또는 전적인 도움"),
-                ("1점", "상당한 도움 필요"),
-                ("3점", "부분적 도움 필요"),
-                ("4점", "스스로 가능함"),
-                ("5점", "완전 독립")
-            ],
-            "key": "kmbi_10"
-        },
-        {
-            "name": "휠체어/침대 이동",
-            "options": [
-                ("0점", "불가능 또는 전적인 도움"),
-                ("3점", "부분적 도움 필요"),
-                ("8점", "감독 필요"),
-                ("12점", "스스로 가능함"),
-                ("15점", "완전 독립")
-            ],
-            "key": "kmbi_11"
-        }
+        {"name": "개인위생", "description": "세수, 머리 빗기, 칫솔질, 면도 등", "key": "kmbi_1"},
+        {"name": "목욕하기", "description": "목욕 또는 샤워", "key": "kmbi_2"},
+        {"name": "식사하기", "description": "음식을 먹는 동작", "key": "kmbi_3"},
+        {"name": "용변처리", "description": "화장실 사용 및 뒤처리", "key": "kmbi_4"},
+        {"name": "계단 오르기", "description": "계단 오르고 내리기", "key": "kmbi_5"},
+        {"name": "옷 입기", "description": "옷과 신발 착용", "key": "kmbi_6"},
+        {"name": "대변조절", "description": "대변 조절 능력", "key": "kmbi_7"},
+        {"name": "소변조절", "description": "소변 조절 능력", "key": "kmbi_8"},
+        {"name": "보행", "description": "실내외 이동", "key": "kmbi_9"},
+        {"name": "의자/침대 이동", "description": "의자나 침대로의 이동", "key": "kmbi_10"},
+        {"name": "휠체어 이동", "description": "휠체어 사용 또는 침대에서 이동", "key": "kmbi_11"}
     ]
+    
+    # CSS 스타일
+    st.markdown("""
+    <style>
+    .kmbi-item {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+        border-left: 4px solid #667eea;
+    }
+    .kmbi-item-header {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .kmbi-item-desc {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     total_score = 0
     
-    for item in kmbi_items:
-        st.markdown(f"### {item['name']}")
+    for idx, item in enumerate(kmbi_items):
+        st.markdown(f"""
+        <div class="kmbi-item">
+            <div class="kmbi-item-header">{idx + 1}. {item['name']}</div>
+            <div class="kmbi-item-desc">{item['description']}</div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # 기존 선택 값 가져오기
-        existing_value = data.get(item['key'], 0)
+        existing_value = data.get(item['key'], "완전히 독립적인 경우")
+        default_index = performance_levels.index(existing_value) if existing_value in performance_levels else 4
         
         # 라디오 버튼으로 선택
         selected = st.radio(
-            "점수 선택",
-            options=[opt[0] + " - " + opt[1] for opt in item['options']],
-            index=0,
+            f"{item['name']} 수행 수준",
+            options=performance_levels,
+            index=default_index,
             key=item['key'],
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            horizontal=False
         )
         
-        # 점수 추출
-        score = int(selected.split("점")[0])
-        total_score += score
+        # 내부 점수 계산
+        total_score += score_mapping[selected]
         
-        st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
     
-    # 총점 표시
-    st.markdown("### 📊 K-MBI 총점")
-    st.metric("총점", f"{total_score}점 / 100점")
+    # 총점 계산 (0-44점 범위를 100점 만점으로 환산)
+    max_score = len(kmbi_items) * 4  # 44점
+    kmbi_score = int((total_score / max_score) * 100)
     
-    # 해석
-    if total_score >= 90:
-        st.success("✅ **독립적**: 일상생활 수행능력이 우수합니다.")
-    elif total_score >= 75:
-        st.info("ℹ️ **경도 의존**: 약간의 도움이 필요합니다.")
-    elif total_score >= 60:
-        st.warning("⚠️ **중등도 의존**: 상당한 도움이 필요합니다.")
-    elif total_score >= 40:
-        st.warning("⚠️ **중증 의존**: 많은 도움이 필요합니다.")
-    else:
-        st.error("🚨 **완전 의존**: 전적인 도움이 필요합니다.")
+    st.markdown("---")
+    
+    # 결과 표시
+    st.markdown("### 📊 K-MBI 평가 결과")
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.metric("총점", f"{kmbi_score}점 / 100점")
+    
+    with col2:
+        # 해석
+        if kmbi_score >= 90:
+            status = "독립적"
+            color = "green"
+            description = "일상생활 수행능력이 우수합니다."
+            icon = "✅"
+        elif kmbi_score >= 75:
+            status = "경도 의존"
+            color = "blue"
+            description = "약간의 도움이 필요합니다."
+            icon = "ℹ️"
+        elif kmbi_score >= 60:
+            status = "중등도 의존"
+            color = "orange"
+            description = "상당한 도움이 필요합니다."
+            icon = "⚠️"
+        elif kmbi_score >= 40:
+            status = "중증 의존"
+            color = "orange"
+            description = "많은 도움이 필요합니다."
+            icon = "⚠️"
+        else:
+            status = "완전 의존"
+            color = "red"
+            description = "전적인 도움이 필요합니다."
+            icon = "🚨"
+        
+        st.markdown(f"""
+        <div style="padding: 20px; background-color: #f0f2f6; border-radius: 10px; border-left: 5px solid {color};">
+            <h3 style="margin: 0; color: {color};">{icon} {status}</h3>
+            <p style="margin: 10px 0 0 0; color: #666;">{description}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 상세 분석
+    st.markdown("---")
+    st.markdown("### 📋 항목별 수행 수준")
+    
+    # 독립성 수준별로 그룹화
+    level_groups = {
+        "완전히 독립적인 경우": [],
+        "최소의 도움이나 감독이 필요한 경우": [],
+        "중등도의 도움이 필요한 경우": [],
+        "최대의 도움이 필요한 경우": [],
+        "과제를 수행할 수 없는 경우": []
+    }
+    
+    for item in kmbi_items:
+        level = data.get(item['key'], "완전히 독립적인 경우")
+        level_groups[level].append(item['name'])
+    
+    for level, items in level_groups.items():
+        if items:
+            if level == "완전히 독립적인 경우":
+                st.success(f"**{level}**: {', '.join(items)}")
+            elif level == "최소의 도움이나 감독이 필요한 경우":
+                st.info(f"**{level}**: {', '.join(items)}")
+            elif level == "중등도의 도움이 필요한 경우":
+                st.warning(f"**{level}**: {', '.join(items)}")
+            else:
+                st.error(f"**{level}**: {', '.join(items)}")
     
     # 데이터 저장
-    st.session_state.basic_data['k_mbi_score'] = total_score
+    st.session_state.basic_data['k_mbi_score'] = kmbi_score
+    
+    # 각 항목의 선택값도 저장
+    for item in kmbi_items:
+        st.session_state.basic_data[item['key']] = data.get(item['key'], "완전히 독립적인 경우")
     
     navigation_buttons()
 
