@@ -516,7 +516,7 @@ def show_page6_mmse():
                 {"question": "여기는 무슨 시(군/구)입니까?", "score": 1},
                 {"question": "여기는 무슨 동(읍/면)입니까?", "score": 1},
                 {"question": "여기는 어디입니까? (요양원, 병원 등)", "score": 1},
-                {"question": "여기는 몇 층입니까?", "score": 1}
+                {"question": "여기는 무엇을 하는 곳입니까?(예: 치료실)", "score": 1}
             ]
         },
         {
@@ -539,42 +539,42 @@ def show_page6_mmse():
             ]
         },
         {
-            "category": "언어기능",
+            "category": "언어기능 - 이름 맞추기",
             "items": [
                 {"question": "이것이 무엇입니까? (연필)", "score": 1},
                 {"question": "이것이 무엇입니까? (시계)", "score": 1}
             ]
         },
         {
-            "category": "언어기능 - 따라 말하기",
-            "items": [
-                {"question": "'하늘이 맑고 파랗습니다' 따라 말하세요", "score": 1}
-            ]
-        },
-        {
             "category": "언어기능 - 3단계 명령",
             "items": [
-                {"question": "종이를 받아서 / 반으로 접어 / 무릎 위에 놓으세요", "score": 3}
+                {"question": "오른손으로 종이를 들어서 / 반으로 접어 / 무릎 위에 놓으세요", "score": 3}
             ]
         },
         {
-            "category": "언어기능 - 읽기",
-            "items": [
-                {"question": "'눈을 감으시오' 읽고 시행하세요", "score": 1}
-            ]
-        },
-        {
-            "category": "언어기능 - 쓰기",
-            "items": [
-                {"question": "문장을 하나 쓰세요 (주어와 동사 포함)", "score": 1}
-            ]
-        },
-        {
-            "category": "시공간 구성",
+            "category": "언어기능 - 복사",
             "items": [
                 {"question": "오각형 2개가 겹쳐진 그림을 따라 그리세요", "score": 1}
             ]
-        }
+        },
+        {
+            "category": "언어기능 - 반복",
+            "items": [
+                {"question": ""간장 공장 공장장" 따라하기", "score": 1}
+            ]
+        },
+        {
+            "category": "이해 및 판단 - 이해",
+            "items": [
+                {"question": "왜 옷은 빨아서 입습니까?", "score": 1}
+            ]
+        },
+        {
+            "category": "이해 및 판단 - 판단",
+            "items": [
+                {"question": "길에서 주민등록증을 주웠을 때 어떻게 하면 쉽게 주인에게 돌려줄 수 있습니까?", "score": 1}
+            ]
+        }                
     ]
     
     total_score = 0
