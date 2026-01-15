@@ -454,9 +454,9 @@ def show_page3():
     
     # 식사 품목 정의
     meal_items = {
-        "조식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
-        "중식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
-        "석식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"]
+        "조식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
+        "중식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
+        "석식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치"]
     }
     
     # 5일간 데이터 입력
@@ -494,21 +494,18 @@ def show_page3():
             # 식사 헤더
             st.markdown(f'<div class="meal-header">{meal_icon} {meal_name} - {meal_type}</div>', unsafe_allow_html=True)
             
-            # 품목별 잔반량 입력
-            if meal_type == '일반식':
-                items_to_show = meal_items[meal_name]
-            else:  # 죽식
-                items_to_show = ["죽", "간식1", "간식2"]
+            # 품목 목록 가져오기
+            available_items = meal_items.get(meal_name, [])
             
             meal_total_provided = 0
             meal_total_intake = 0
             meal_total_leftover = 0
             
-            for food_item in items_to_show:
+            for food_item in available_items:
                 # 제공량 확인
                 provided_amount = intake_meal_data.get(food_item, 0)
                 
-                # 제공량이 0이면 건너뛰기
+                # 제공량이 0이거나 None이면 건너뛰기
                 if not provided_amount or provided_amount == 0:
                     continue
                 
@@ -516,14 +513,15 @@ def show_page3():
                 st.markdown(f'<div class="food-item-header">🍽️ {food_item} (제공: {provided_amount}g)</div>', 
                            unsafe_allow_html=True)
                 
-                # 품목별 잔반량 데이터 초기화
-                if food_item not in leftover_meal_data:
+                # 품목별 잔반량 데이터 초기화 (딕셔너리 타입 확인)
+                if food_item not in leftover_meal_data or not isinstance(leftover_meal_data.get(food_item), dict):
                     leftover_meal_data[food_item] = {
                         'leftover_option': '다 먹음',
                         'leftover_ratio': 0.0
                     }
                 
-                current_selection = leftover_meal_data[food_item].get('leftover_option', '다 먹음')
+                food_leftover_data = leftover_meal_data[food_item]
+                current_selection = food_leftover_data.get('leftover_option', '다 먹음')
                 
                 # 5개 옵션을 한 줄에 배치
                 cols = st.columns(5)
@@ -562,12 +560,14 @@ def show_page3():
                             use_container_width=True,
                             type="primary" if is_selected else "secondary"
                         ):
-                            leftover_meal_data[food_item]['leftover_option'] = option_label
-                            leftover_meal_data[food_item]['leftover_ratio'] = option_ratio
+                            leftover_meal_data[food_item] = {
+                                'leftover_option': option_label,
+                                'leftover_ratio': option_ratio
+                            }
                             st.rerun()
                 
                 # 품목별 계산
-                leftover_ratio = leftover_meal_data[food_item].get('leftover_ratio', 0)
+                leftover_ratio = food_leftover_data.get('leftover_ratio', 0)
                 actual_intake = provided_amount * (1 - leftover_ratio)
                 leftover_amount = provided_amount * leftover_ratio
                 
@@ -621,34 +621,24 @@ def show_page3():
         daily_provided = 0
         daily_actual_intake = 0
         
-        # 제공량 계산
+        # 제공량 및 섭취량 계산
         if date_str in data.get('food_intake_data', {}):
             for meal_name in ["조식", "중식", "석식"]:
                 if meal_name in data['food_intake_data'][date_str]:
-                    meal_data = data['food_intake_data'][date_str][meal_name]
-                    for key, value in meal_data.items():
-                        if key != 'meal_type' and isinstance(value, (int, float)):
-                            daily_provided += value
-        
-        # 실제 섭취량 계산
-        if date_str in data.get('leftover_data', {}):
-            for meal_name in ["조식", "중식", "석식"]:
-                if meal_name in data['leftover_data'][date_str]:
-                    leftover_meal = data['leftover_data'][date_str][meal_name]
+                    intake_meal = data['food_intake_data'][date_str][meal_name]
+                    leftover_meal = data.get('leftover_data', {}).get(date_str, {}).get(meal_name, {})
                     
-                    # 각 품목별로 계산
-                    if date_str in data.get('food_intake_data', {}):
-                        if meal_name in data['food_intake_data'][date_str]:
-                            intake_meal = data['food_intake_data'][date_str][meal_name]
+                    for food_item, provided_amount in intake_meal.items():
+                        if food_item != 'meal_type' and isinstance(provided_amount, (int, float)) and provided_amount > 0:
+                            daily_provided += provided_amount
                             
-                            for food_item, provided_amount in intake_meal.items():
-                                if food_item != 'meal_type' and isinstance(provided_amount, (int, float)):
-                                    if food_item in leftover_meal and isinstance(leftover_meal[food_item], dict):
-                                        leftover_ratio = leftover_meal[food_item].get('leftover_ratio', 0)
-                                        daily_actual_intake += provided_amount * (1 - leftover_ratio)
-                                    else:
-                                        # 잔반 데이터가 없으면 전부 섭취한 것으로 간주
-                                        daily_actual_intake += provided_amount
+                            # 잔반 데이터 확인
+                            if food_item in leftover_meal and isinstance(leftover_meal[food_item], dict):
+                                leftover_ratio = leftover_meal[food_item].get('leftover_ratio', 0)
+                                daily_actual_intake += provided_amount * (1 - leftover_ratio)
+                            else:
+                                # 잔반 데이터가 없으면 전부 섭취한 것으로 간주
+                                daily_actual_intake += provided_amount
         
         intake_rate = (daily_actual_intake / daily_provided * 100) if daily_provided > 0 else 0
         
