@@ -464,152 +464,120 @@ def show_page6_mmse():
     
     data = st.session_state.basic_data
     
-    # MMSE-K 평가 항목
-    mmse_sections = [
-        {
-            "category": "지남력 (시간)",
-            "items": [
-                {"question": "오늘은 몇 년도입니까?", "score": 1},
-                {"question": "몇 월입니까?", "score": 1},
-                {"question": "몇 일입니까?", "score": 1},
-                {"question": "무슨 요일입니까?", "score": 1},
-                {"question": "무슨 계절입니까?", "score": 1}
-            ]
-        },
-        {
-            "category": "지남력 (장소)",
-            "items": [
-                {"question": "여기는 무슨 도(시/군)입니까?", "score": 1},
-                {"question": "여기는 무슨 시(군/구)입니까?", "score": 1},
-                {"question": "여기는 무슨 동(읍/면)입니까?", "score": 1},
-                {"question": "여기는 어디입니까? (요양원, 병원 등)", "score": 1},
-                {"question": "여기는 무엇을 하는 곳입니까?(예: 치료실)", "score": 1}
-            ]
-        },
-        {
-            "category": "기억등록",
-            "items": [
-                {"question": "세 가지 단어 즉시 따라하기 (나무, 자동차, 모자)", "score": 3}
-            ]
-        },
-        {
-            "category": "주의집중 및 계산",
-            "items": [
-                {"question": "100에서 7을 계속해서 빼세요. (100-7=? 그 다음은?)", "score": 5}
-            ],
-            "note": "또는 '삼천리강산'을 거꾸로 말하세요."
-        },
-        {
-            "category": "기억회상",
-            "items": [
-                {"question": "아까 세 가지 단어가 무엇이었습니까? (나무, 자동차, 모자)", "score": 3}
-            ]
-        },
-        {
-            "category": "언어기능 - 이름 맞추기",
-            "items": [
-                {"question": "이것이 무엇입니까? (연필)", "score": 1},
-                {"question": "이것이 무엇입니까? (시계)", "score": 1}
-            ]
-        },
-        {
-            "category": "언어기능 - 3단계 명령",
-            "items": [
-                {"question": "오른손으로 종이를 들어서 / 반으로 접어 / 무릎 위에 놓으세요", "score": 3}
-            ]
-        },
-        {
-            "category": "언어기능 - 복사",
-            "items": [
-                {"question": "오각형 2개가 겹쳐진 그림을 따라 그리세요", "score": 1}
-            ]
-        },
-        {
-            "category": "언어기능 - 반복",
-            "items": [
-                {"question": "간장 공장 공장장 따라하기", "score": 1}
-            ]
-        },
-        {
-            "category": "이해 및 판단 - 이해",
-            "items": [
-                {"question": "왜 옷은 빨아서 입습니까?", "score": 1}
-            ]
-        },
-        {
-            "category": "이해 및 판단 - 판단",
-            "items": [
-                {"question": "길에서 주민등록증을 주웠을 때 어떻게 하면 쉽게 주인에게 돌려줄 수 있습니까?", "score": 1}
-            ]
-        }                
-    ]
+    # MMSE-K 평가 항목 (11개 영역)
+    mmse_items = {
+        "mmse_time_orientation": {"name": "시간 지남력", "max_score": 5, "questions": [
+            "오늘은 몇 년도입니까?",
+            "몇 월입니까?",
+            "몇 일입니까?",
+            "무슨 요일입니까?",
+            "무슨 계절입니까?"
+        ]},
+        "mmse_place_orientation": {"name": "장소 지남력", "max_score": 5, "questions": [
+            "여기는 무슨 도(시/군)입니까?",
+            "여기는 무슨 시(군/구)입니까?",
+            "여기는 무슨 동(읍/면)입니까?",
+            "여기는 어디입니까? (요양원, 병원 등)",
+            "여기는 무엇을 하는 곳입니까?"
+        ]},
+        "mmse_registration": {"name": "기억등록", "max_score": 3, "questions": [
+            "세 가지 단어 즉시 따라하기 (나무, 자동차, 모자)"
+        ]},
+        "mmse_attention_calculation": {"name": "주의집중 및 계산", "max_score": 5, "questions": [
+            "100에서 7을 계속해서 빼세요 (또는 '삼천리강산'을 거꾸로)"
+        ]},
+        "mmse_recall": {"name": "기억회상", "max_score": 3, "questions": [
+            "아까 세 가지 단어가 무엇이었습니까?"
+        ]},
+        "mmse_naming": {"name": "이름 맞추기", "max_score": 2, "questions": [
+            "이것이 무엇입니까? (연필)",
+            "이것이 무엇입니까? (시계)"
+        ]},
+        "mmse_comprehension": {"name": "3단계 명령", "max_score": 3, "questions": [
+            "오른손으로 종이를 들어서 / 반으로 접어 / 무릎 위에 놓으세요"
+        ]},
+        "mmse_drawing": {"name": "도형 그리기", "max_score": 1, "questions": [
+            "오각형 2개가 겹쳐진 그림 따라 그리기"
+        ]},        
+        "mmse_repetition": {"name": "따라 말하기", "max_score": 1, "questions": [
+            "간장 공장 공장장"
+        ]},        
+        "mmse_reading": {"name": "이해", "max_score": 1, "questions": [
+            "왜 옷은 빨아서 입습니까?"
+        ]},
+        "mmse_writing": {"name": "판단", "max_score": 1, "questions": [
+            "길에서 주민등록증을 주웠을 때 어떻게 하면 쉽게 주인에게 돌려줄 수 있습니까?"
+        ]}
+    }
     
     total_score = 0
-    section_index = 0
     
-    for section in mmse_sections:
-        st.markdown(f"### {section['category']}")
+    # 각 영역별 평가
+    for key, item in mmse_items.items():
+        st.markdown(f"### {item['name']}")
+        st.caption(f"💡 최대 {item['max_score']}점")
         
-        if 'note' in section:
-            st.caption(f"💡 {section['note']}")
+        # 질문 표시
+        for question in item['questions']:
+            st.write(f"• {question}")
         
-        for item_index, item in enumerate(section['items']):
-            col1, col2 = st.columns([4, 1])
-            
-            with col1:
-                st.write(item['question'])
-            
-            with col2:
-                key = f"mmse_{section_index}_{item_index}"
-                
-                if item['score'] == 1:
-                    correct = st.checkbox("정답", key=key)
-                    if correct:
-                        total_score += 1
-                else:
-                    score_value = st.number_input(
-                        f"점수 (0-{item['score']})",
-                        min_value=0,
-                        max_value=item['score'],
-                        value=0,
-                        key=key,
-                        label_visibility="collapsed"
-                    )
-                    total_score += score_value
+        # 점수 입력
+        score_value = st.number_input(
+            f"획득 점수 (0 ~ {item['max_score']})",
+            min_value=0,
+            max_value=item['max_score'],
+            value=int(data.get(key, 0)),
+            key=key,
+            help=f"{item['name']} 영역의 점수를 입력하세요"
+        )
         
-        section_index += 1
+        # ✅ 세션에 저장
+        data[key] = score_value
+        total_score += score_value
+        
         st.markdown("---")
     
     # 총점 표시
     st.markdown("### 📊 MMSE-K 총점")
-    st.metric("총점", f"{total_score}점 / 30점")
+    col1, col2 = st.columns(2)
     
-    # 해석 (교육 수준별 정상 기준)
-    st.markdown("#### 인지기능 평가 결과")
-    education = data.get('education', '')
+    with col1:
+        st.metric("총점", f"{total_score}점 / 30점", 
+                 delta=f"{total_score - 15}점" if total_score >= 15 else None)
     
-    if '무학' in education:
-        cutoff = 19
-    elif '초등학교' in education:
-        cutoff = 22
-    elif '중학교' in education or '고등학교' in education:
-        cutoff = 24
-    else:
-        cutoff = 24
+    with col2:
+        # 교육 수준별 정상 기준
+        education = data.get('education', '')
+        
+        if '무학' in education:
+            cutoff = 19
+        elif '초등학교' in education:
+            cutoff = 22
+        elif '중학교' in education or '고등학교' in education:
+            cutoff = 24
+        else:
+            cutoff = 24
+        
+        if total_score >= cutoff:
+            st.success(f"✅ 정상 인지기능 (기준: ≥{cutoff}점)")
+        elif total_score >= cutoff - 4:
+            st.warning(f"⚠️ 경도 인지장애 의심 (기준: ≥{cutoff}점)")
+        else:
+            st.error(f"🚨 인지장애 의심 (기준: ≥{cutoff}점)")
     
-    if total_score >= cutoff:
-        st.success(f"✅ **정상 인지기능**: {total_score}점 (기준: {cutoff}점 이상)")
-    elif total_score >= cutoff - 4:
-        st.warning(f"⚠️ **경도 인지장애 의심**: {total_score}점 (기준: {cutoff}점 이상)")
-    else:
-        st.error(f"🚨 **인지장애 의심**: {total_score}점 (기준: {cutoff}점 이상)")
+    # 교육 수준별 기준 안내
+    st.info("""
+    **교육 수준별 정상 기준**
+    - 무학: ≥19점
+    - 초등학교 졸업: ≥22점
+    - 중학교 이상: ≥24점
+    """)
     
-    st.info(f"💡 교육 수준별 정상 기준: 무학 ≥19점, 초졸 ≥22점, 중졸 이상 ≥24점")
-    
-    # 데이터 저장
-    st.session_state.basic_data['mmse_score'] = total_score
+    # ✅ 총점도 세션에 저장
+    data['mmse_score'] = total_score
     
     navigation_buttons()
+
 
 def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
     """7페이지: 시설 특성 및 제출"""
