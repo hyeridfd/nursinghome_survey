@@ -905,7 +905,6 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             if 'mmse_score' in survey_data:
                 st.metric("MMSE-K 총점", f"{survey_data['mmse_score']}/30점")
         
-        st.balloons()
         
         # 세션 초기화
         if 'basic_data' in st.session_state:
