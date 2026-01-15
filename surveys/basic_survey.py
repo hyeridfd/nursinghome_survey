@@ -560,7 +560,7 @@ def show_page6_mmse():
         {
             "category": "언어기능 - 반복",
             "items": [
-                {"question": ""간장 공장 공장장" 따라하기", "score": 1}
+                {"question": "간장 공장 공장장 따라하기", "score": 1}
             ]
         },
         {
