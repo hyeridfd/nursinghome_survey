@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("🥗 2. 영양 조사표")
@@ -21,7 +21,7 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             st.session_state.nutrition_data = {}
     
     # 페이지 진행 표시
-    total_pages = 2
+    total_pages = 4  # 2페이지에서 4페이지로 증가
     st.progress(st.session_state.nutrition_page / total_pages)
     st.caption(f"페이지 {st.session_state.nutrition_page} / {total_pages}")
     
@@ -29,7 +29,11 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     if st.session_state.nutrition_page == 1:
         show_page1()
     elif st.session_state.nutrition_page == 2:
-        show_page2(supabase, elderly_id, surveyor_id, nursing_home_id)
+        show_page2()
+    elif st.session_state.nutrition_page == 3:
+        show_page3()
+    elif st.session_state.nutrition_page == 4:
+        show_page4(supabase, elderly_id, surveyor_id, nursing_home_id)
 
 def show_page1():
     """1페이지: 신체 활동 수준 조사 (IPAQ-SF)"""
@@ -160,8 +164,383 @@ def show_page1():
     
     navigation_buttons()
 
-def show_page2(supabase, elderly_id, surveyor_id, nursing_home_id):
-    """2페이지: 영양 상태 평가 (MNA-SF) 및 제출"""
+def show_page2():
+    """2페이지: 1인 분량 음식 질량 조사(5일)"""
+    st.subheader("📏 1인 분량 음식 질량 조사 (5일)")
+    
+    st.info("📝 5일간의 식사별 음식 중량을 그램(g) 단위로 기록해주세요.")
+    
+    data = st.session_state.nutrition_data
+    
+    # 5일간의 날짜 생성
+    if 'food_intake_start_date' not in data:
+        start_date = datetime.now()
+    else:
+        start_date = datetime.fromisoformat(data['food_intake_start_date'])
+    
+    # 시작 날짜 선택
+    selected_start_date = st.date_input(
+        "조사 시작 날짜",
+        value=start_date.date(),
+        key="food_intake_start_date"
+    )
+    
+    # 식사 유형 정의
+    meal_types = {
+        "조식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        },
+        "중식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        },
+        "석식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        }
+    }
+    
+    # 식품 섭취 데이터 초기화
+    if 'food_intake_data' not in data:
+        data['food_intake_data'] = {}
+    
+    # 5일간 데이터 입력
+    for day in range(5):
+        current_date = selected_start_date + timedelta(days=day)
+        date_str = current_date.strftime("%Y-%m-%d")
+        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
+        
+        st.markdown(f"---")
+        st.markdown(f"### 📅 {current_date.strftime('%m/%d')}({day_name})")
+        
+        if date_str not in data['food_intake_data']:
+            data['food_intake_data'][date_str] = {}
+        
+        # 각 식사 시간대별 입력
+        tabs = st.tabs(["🌅 조식", "☀️ 중식", "🌙 석식"])
+        
+        for tab_idx, (meal_name, tab) in enumerate(zip(["조식", "중식", "석식"], tabs)):
+            with tab:
+                if meal_name not in data['food_intake_data'][date_str]:
+                    data['food_intake_data'][date_str][meal_name] = {}
+                
+                meal_data = data['food_intake_data'][date_str][meal_name]
+                
+                # 식사 유형 선택
+                meal_type = st.radio(
+                    "식사 유형",
+                    options=["일반식", "죽식"],
+                    key=f"meal_type_{date_str}_{meal_name}",
+                    horizontal=True,
+                    index=0 if meal_data.get('meal_type', '일반식') == '일반식' else 1
+                )
+                
+                meal_data['meal_type'] = meal_type
+                
+                # 일반식 입력
+                if meal_type == "일반식":
+                    st.markdown("**일반식**")
+                    cols = st.columns(3)
+                    for idx, item in enumerate(meal_types[meal_name]["일반식"]):
+                        with cols[idx % 3]:
+                            value = st.number_input(
+                                f"{item} (g)",
+                                min_value=0,
+                                max_value=2000,
+                                value=int(meal_data.get(item, 0)) if meal_data.get(item) else 0,
+                                step=10,
+                                key=f"intake_{date_str}_{meal_name}_{item}"
+                            )
+                            meal_data[item] = value
+                
+                # 죽식 입력
+                else:
+                    st.markdown("**죽식**")
+                    value = st.number_input(
+                        "죽 (g)",
+                        min_value=0,
+                        max_value=2000,
+                        value=int(meal_data.get('죽', 0)) if meal_data.get('죽') else 0,
+                        step=10,
+                        key=f"intake_{date_str}_{meal_name}_죽"
+                    )
+                    meal_data['죽'] = value
+                
+                # 간식 입력
+                st.markdown("**간식**")
+                cols = st.columns(2)
+                for idx, item in enumerate(meal_types[meal_name]["간식"]):
+                    with cols[idx]:
+                        value = st.number_input(
+                            f"{item} (g)",
+                            min_value=0,
+                            max_value=1000,
+                            value=int(meal_data.get(item, 0)) if meal_data.get(item) else 0,
+                            step=10,
+                            key=f"intake_{date_str}_{meal_name}_{item}"
+                        )
+                        meal_data[item] = value
+    
+    # 데이터 저장
+    st.session_state.nutrition_data['food_intake_start_date'] = selected_start_date.isoformat()
+    st.session_state.nutrition_data['food_intake_data'] = data['food_intake_data']
+    
+    # 일일 총 섭취량 요약
+    st.markdown("---")
+    st.subheader("📊 5일간 총 섭취량 요약")
+    
+    summary_data = []
+    for day in range(5):
+        current_date = selected_start_date + timedelta(days=day)
+        date_str = current_date.strftime("%Y-%m-%d")
+        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
+        
+        daily_total = 0
+        if date_str in data['food_intake_data']:
+            for meal_name in ["조식", "중식", "석식"]:
+                if meal_name in data['food_intake_data'][date_str]:
+                    meal_data = data['food_intake_data'][date_str][meal_name]
+                    for key, value in meal_data.items():
+                        if key != 'meal_type' and isinstance(value, (int, float)):
+                            daily_total += value
+        
+        summary_data.append({
+            "날짜": f"{current_date.strftime('%m/%d')}({day_name})",
+            "총 섭취량": f"{daily_total}g"
+        })
+    
+    cols = st.columns(5)
+    for idx, day_data in enumerate(summary_data):
+        with cols[idx]:
+            st.metric(day_data["날짜"], day_data["총 섭취량"])
+    
+    navigation_buttons()
+
+def show_page3():
+    """3페이지: 잔반량 조사(5일)"""
+    st.subheader("🗑️ 잔반량 조사 (5일)")
+    
+    st.info("📝 5일간의 식사별 잔반 중량을 그램(g) 단위로 기록해주세요.")
+    
+    data = st.session_state.nutrition_data
+    
+    # 식품 섭취 조사에서 설정한 날짜 사용
+    if 'food_intake_start_date' not in data:
+        start_date = datetime.now()
+        st.warning("⚠️ 먼저 '1인 분량 음식 질량 조사' 페이지에서 조사 날짜를 설정해주세요.")
+    else:
+        start_date = datetime.fromisoformat(data['food_intake_start_date'])
+    
+    selected_start_date = start_date.date() if isinstance(start_date, datetime) else start_date
+    
+    st.info(f"📅 조사 기간: {selected_start_date.strftime('%Y년 %m월 %d일')}부터 5일간")
+    
+    # 잔반량 데이터 초기화
+    if 'leftover_data' not in data:
+        data['leftover_data'] = {}
+    
+    # 식사 유형 정의 (섭취량과 동일)
+    meal_types = {
+        "조식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        },
+        "중식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        },
+        "석식": {
+            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
+            "죽식": ["죽"],
+            "간식": ["간식1", "간식2"]
+        }
+    }
+    
+    # 5일간 데이터 입력
+    for day in range(5):
+        current_date = selected_start_date + timedelta(days=day)
+        date_str = current_date.strftime("%Y-%m-%d")
+        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
+        
+        st.markdown(f"---")
+        st.markdown(f"### 📅 {current_date.strftime('%m/%d')}({day_name})")
+        
+        if date_str not in data['leftover_data']:
+            data['leftover_data'][date_str] = {}
+        
+        # 섭취량 데이터 참조 (있는 경우)
+        intake_data_for_date = data.get('food_intake_data', {}).get(date_str, {})
+        
+        # 각 식사 시간대별 입력
+        tabs = st.tabs(["🌅 조식", "☀️ 중식", "🌙 석식"])
+        
+        for tab_idx, (meal_name, tab) in enumerate(zip(["조식", "중식", "석식"], tabs)):
+            with tab:
+                if meal_name not in data['leftover_data'][date_str]:
+                    data['leftover_data'][date_str][meal_name] = {}
+                
+                leftover_meal_data = data['leftover_data'][date_str][meal_name]
+                
+                # 섭취량에서 식사 유형 가져오기
+                intake_meal_data = intake_data_for_date.get(meal_name, {})
+                meal_type = intake_meal_data.get('meal_type', '일반식')
+                
+                st.info(f"식사 유형: **{meal_type}** (섭취량 조사 기준)")
+                leftover_meal_data['meal_type'] = meal_type
+                
+                # 일반식 입력
+                if meal_type == "일반식":
+                    st.markdown("**일반식 잔반**")
+                    cols = st.columns(3)
+                    for idx, item in enumerate(meal_types[meal_name]["일반식"]):
+                        with cols[idx % 3]:
+                            # 섭취량 표시
+                            intake_amount = intake_meal_data.get(item, 0)
+                            
+                            value = st.number_input(
+                                f"{item} (g)",
+                                min_value=0,
+                                max_value=int(intake_amount) if intake_amount else 2000,
+                                value=int(leftover_meal_data.get(item, 0)) if leftover_meal_data.get(item) else 0,
+                                step=10,
+                                key=f"leftover_{date_str}_{meal_name}_{item}",
+                                help=f"제공량: {intake_amount}g"
+                            )
+                            leftover_meal_data[item] = value
+                            
+                            # 실제 섭취량 표시
+                            actual_intake = intake_amount - value
+                            if actual_intake < 0:
+                                st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
+                            else:
+                                st.caption(f"실제 섭취: {actual_intake}g")
+                
+                # 죽식 입력
+                else:
+                    st.markdown("**죽식 잔반**")
+                    intake_amount = intake_meal_data.get('죽', 0)
+                    
+                    value = st.number_input(
+                        "죽 (g)",
+                        min_value=0,
+                        max_value=int(intake_amount) if intake_amount else 2000,
+                        value=int(leftover_meal_data.get('죽', 0)) if leftover_meal_data.get('죽') else 0,
+                        step=10,
+                        key=f"leftover_{date_str}_{meal_name}_죽",
+                        help=f"제공량: {intake_amount}g"
+                    )
+                    leftover_meal_data['죽'] = value
+                    
+                    actual_intake = intake_amount - value
+                    if actual_intake < 0:
+                        st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
+                    else:
+                        st.success(f"실제 섭취: {actual_intake}g")
+                
+                # 간식 입력
+                st.markdown("**간식 잔반**")
+                cols = st.columns(2)
+                for idx, item in enumerate(meal_types[meal_name]["간식"]):
+                    with cols[idx]:
+                        intake_amount = intake_meal_data.get(item, 0)
+                        
+                        value = st.number_input(
+                            f"{item} (g)",
+                            min_value=0,
+                            max_value=int(intake_amount) if intake_amount else 1000,
+                            value=int(leftover_meal_data.get(item, 0)) if leftover_meal_data.get(item) else 0,
+                            step=10,
+                            key=f"leftover_{date_str}_{meal_name}_{item}",
+                            help=f"제공량: {intake_amount}g"
+                        )
+                        leftover_meal_data[item] = value
+                        
+                        actual_intake = intake_amount - value
+                        if actual_intake < 0:
+                            st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
+                        else:
+                            st.caption(f"실제 섭취: {actual_intake}g")
+    
+    # 데이터 저장
+    st.session_state.nutrition_data['leftover_data'] = data['leftover_data']
+    
+    # 일일 잔반량 및 섭취율 요약
+    st.markdown("---")
+    st.subheader("📊 5일간 섭취율 요약")
+    
+    summary_data = []
+    for day in range(5):
+        current_date = selected_start_date + timedelta(days=day)
+        date_str = current_date.strftime("%Y-%m-%d")
+        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
+        
+        daily_intake_total = 0
+        daily_leftover_total = 0
+        
+        # 제공량 계산
+        if date_str in data.get('food_intake_data', {}):
+            for meal_name in ["조식", "중식", "석식"]:
+                if meal_name in data['food_intake_data'][date_str]:
+                    meal_data = data['food_intake_data'][date_str][meal_name]
+                    for key, value in meal_data.items():
+                        if key != 'meal_type' and isinstance(value, (int, float)):
+                            daily_intake_total += value
+        
+        # 잔반량 계산
+        if date_str in data.get('leftover_data', {}):
+            for meal_name in ["조식", "중식", "석식"]:
+                if meal_name in data['leftover_data'][date_str]:
+                    meal_data = data['leftover_data'][date_str][meal_name]
+                    for key, value in meal_data.items():
+                        if key != 'meal_type' and isinstance(value, (int, float)):
+                            daily_leftover_total += value
+        
+        # 실제 섭취량 및 섭취율 계산
+        actual_intake = daily_intake_total - daily_leftover_total
+        intake_rate = (actual_intake / daily_intake_total * 100) if daily_intake_total > 0 else 0
+        
+        summary_data.append({
+            "날짜": f"{current_date.strftime('%m/%d')}({day_name})",
+            "제공량": daily_intake_total,
+            "잔반량": daily_leftover_total,
+            "실제섭취": actual_intake,
+            "섭취율": intake_rate
+        })
+    
+    cols = st.columns(5)
+    for idx, day_data in enumerate(summary_data):
+        with cols[idx]:
+            st.metric(
+                day_data["날짜"],
+                f"{day_data['섭취율']:.1f}%",
+                f"{day_data['실제섭취']}g"
+            )
+            st.caption(f"제공: {day_data['제공량']}g")
+            st.caption(f"잔반: {day_data['잔반량']}g")
+    
+    # 5일 평균 섭취율
+    avg_intake_rate = sum(d['섭취율'] for d in summary_data) / len(summary_data)
+    
+    st.markdown("---")
+    st.info(f"📊 **5일 평균 섭취율: {avg_intake_rate:.1f}%**")
+    
+    if avg_intake_rate >= 80:
+        st.success("✅ 양호한 섭취율입니다.")
+    elif avg_intake_rate >= 60:
+        st.warning("⚠️ 섭취율이 다소 낮습니다. 식사 관리가 필요합니다.")
+    else:
+        st.error("🚨 섭취율이 매우 낮습니다. 영양 상담이 필요합니다.")
+    
+    navigation_buttons()
+
+def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
+    """4페이지: 영양 상태 평가 (MNA-SF) 및 제출"""
     st.subheader("영양 상태 평가 (MNA-SF)")
     
     st.info("📝 간이 영양 평가 (Mini Nutritional Assessment - Short Form)")
@@ -351,6 +730,13 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     """설문 데이터 저장"""
     try:
         data = st.session_state.nutrition_data.copy()
+        
+        # JSON 직렬화 가능하도록 변환
+        if 'food_intake_data' in data:
+            data['food_intake_data'] = json.dumps(data['food_intake_data'])
+        if 'leftover_data' in data:
+            data['leftover_data'] = json.dumps(data['leftover_data'])
+        
         data.update({
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
@@ -381,7 +767,6 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         del st.session_state.nutrition_page
         st.session_state.current_survey = None
         
-        
         if st.button("대시보드로 돌아가기"):
             st.rerun()
         
@@ -409,7 +794,7 @@ def navigation_buttons():
             st.rerun()
     
     with col3:
-        if st.session_state.nutrition_page < 2:
+        if st.session_state.nutrition_page < 4:  # 총 4페이지
             if st.button("다음 ➡️", use_container_width=True, type="primary"):
                 st.session_state.nutrition_page += 1
                 st.rerun()
