@@ -310,32 +310,37 @@ def show_page4():
     navigation_buttons()
 
 def show_page5_kmbi():
-    """5페이지: K-MBI (한국판 수정 바델 지수) 평가"""
-    st.subheader("K-MBI (한국판 수정 바델 지수) 평가")
+    """
+    페이지 5: K-MBI (한국판 수정 바델 지수) 평가
+    5단계 간편 평가 방식
+    """
+    st.header("📋 5. K-MBI (한국판 수정 바델 지수)")
     
-    st.info("📝 일상생활 수행능력을 평가합니다. 각 항목에서 해당하는 수준을 선택해주세요.")
+    st.info("""
+    **K-MBI 평가 안내**
     
-    data = st.session_state.basic_data
+    각 항목에 대해 대상자의 현재 수행 능력을 평가해주세요.
+    """)
     
-    # 5단계 평가 옵션
-    performance_levels = [
+    # K-MBI 평가 옵션 (5단계)
+    kmbi_options = [
         "과제를 수행할 수 없는 경우",
         "최대의 도움이 필요한 경우",
         "중등도의 도움이 필요한 경우",
-        "최소의 도움이나 감독이 필요한 경우",
+        "최소한의 도움이 필요하거나 감시가 필요한 경우",
         "완전히 독립적인 경우"
     ]
     
-    # 점수 매핑 (내부 계산용)
+    # 점수 매핑 (5단계 → 0-4점)
     score_mapping = {
         "과제를 수행할 수 없는 경우": 0,
         "최대의 도움이 필요한 경우": 1,
         "중등도의 도움이 필요한 경우": 2,
-        "최소의 도움이나 감독이 필요한 경우": 3,
+        "최소한의 도움이 필요하거나 감시가 필요한 경우": 3,
         "완전히 독립적인 경우": 4
     }
     
-    # K-MBI 평가 항목
+    # 11개 K-MBI 평가 항목
     kmbi_items = [
         {"name": "개인위생", "description": "세수, 머리 빗기, 칫솔질, 면도 등", "key": "kmbi_1"},
         {"name": "목욕하기", "description": "목욕 또는 샤워", "key": "kmbi_2"},
@@ -350,144 +355,105 @@ def show_page5_kmbi():
         {"name": "의자/침대 이동", "description": "의자나 침대로의 이동", "key": "kmbi_11"}
     ]
     
-    # CSS 스타일
-    st.markdown("""
-    <style>
-    .kmbi-item {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        margin: 15px 0;
-        border-left: 4px solid #667eea;
-    }
-    .kmbi-item-header {
-        font-size: 18px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 5px;
-    }
-    .kmbi-item-desc {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 15px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    data = st.session_state.basic_data
     
-    total_score = 0
+    # 각 항목 평가
+    st.subheader("📝 항목별 평가")
     
-    for idx, item in enumerate(kmbi_items):
-        st.markdown(f"""
-        <div class="kmbi-item">
-            <div class="kmbi-item-header">{idx + 1}. {item['name']}</div>
-            <div class="kmbi-item-desc">{item['description']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # 기존 선택 값 가져오기
-        existing_value = data.get(item['key'], "완전히 독립적인 경우")
-        default_index = performance_levels.index(existing_value) if existing_value in performance_levels else 4
-        
-        # 라디오 버튼으로 선택
-        selected = st.radio(
-            f"{item['name']} 수행 수준",
-            options=performance_levels,
-            index=default_index,
-            key=item['key'],
-            label_visibility="collapsed",
-            horizontal=False
-        )
-        
-        # 내부 점수 계산
-        total_score += score_mapping[selected]
-        
-        st.markdown("<br>", unsafe_allow_html=True)
+    for idx, item in enumerate(kmbi_items, 1):
+        with st.container():
+            st.markdown(f"### {idx}. {item['name']}")
+            st.caption(f"📌 {item['description']}")
+            
+            current_value = data.get(item['key'], kmbi_options[0])
+            
+            selected = st.radio(
+                f"{item['name']} 수행 수준",
+                options=kmbi_options,
+                index=kmbi_options.index(current_value) if current_value in kmbi_options else 0,
+                key=f"radio_{item['key']}",
+                label_visibility="collapsed",
+                horizontal=False
+            )
+            
+            data[item['key']] = selected
+            st.divider()
     
-    # 총점 계산 (0-44점 범위를 100점 만점으로 환산)
-    max_score = len(kmbi_items) * 4  # 44점
-    kmbi_score = int((total_score / max_score) * 100)
+    # 총점 계산 (0-44점 → 100점 만점으로 환산)
+    total_raw_score = sum(score_mapping.get(data.get(item['key'], kmbi_options[0]), 0) 
+                          for item in kmbi_items)
     
-    st.markdown("---")
+    # 100점 만점으로 환산 (44점 만점 * 100/44)
+    kmbi_score = round((total_raw_score / 44) * 100, 1)
+    data['k_mbi_score'] = kmbi_score
     
-    # 결과 표시
-    st.markdown("### 📊 K-MBI 평가 결과")
+    # 결과 해석
+    st.subheader("📊 K-MBI 평가 결과")
     
-    col1, col2 = st.columns([1, 2])
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("총점", f"{kmbi_score}점 / 100점")
+        st.metric("원점수", f"{total_raw_score}/44점")
     
     with col2:
-        # 해석
+        st.metric("환산점수", f"{kmbi_score}/100점")
+    
+    with col3:
         if kmbi_score >= 90:
-            status = "독립적"
-            color = "green"
-            description = "일상생활 수행능력이 우수합니다."
-            icon = "✅"
+            status = "독립"
+            status_color = "🟢"
         elif kmbi_score >= 75:
             status = "경도 의존"
-            color = "blue"
-            description = "약간의 도움이 필요합니다."
-            icon = "ℹ️"
+            status_color = "🟡"
         elif kmbi_score >= 60:
             status = "중등도 의존"
-            color = "orange"
-            description = "상당한 도움이 필요합니다."
-            icon = "⚠️"
+            status_color = "🟠"
         elif kmbi_score >= 40:
             status = "중증 의존"
-            color = "orange"
-            description = "많은 도움이 필요합니다."
-            icon = "⚠️"
+            status_color = "🔴"
         else:
             status = "완전 의존"
-            color = "red"
-            description = "전적인 도움이 필요합니다."
-            icon = "🚨"
+            status_color = "⚫"
         
-        st.markdown(f"""
-        <div style="padding: 20px; background-color: #f0f2f6; border-radius: 10px; border-left: 5px solid {color};">
-            <h3 style="margin: 0; color: {color};">{icon} {status}</h3>
-            <p style="margin: 10px 0 0 0; color: #666;">{description}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("의존도", f"{status_color} {status}")
     
-    # 상세 분석
-    st.markdown("---")
-    st.markdown("### 📋 항목별 수행 수준")
+    # 상태별 해석
+    st.info(f"""
+    **해석 기준**
+    - 90-100점: 독립 (일상생활 수행 가능)
+    - 75-89점: 경도 의존 (약간의 도움 필요)
+    - 60-74점: 중등도 의존 (상당한 도움 필요)
+    - 40-59점: 중증 의존 (대부분의 활동에 도움 필요)
+    - 0-39점: 완전 의존 (거의 모든 활동에 도움 필요)
     
-    # 독립성 수준별로 그룹화
-    level_groups = {
-        "완전히 독립적인 경우": [],
-        "최소의 도움이나 감독이 필요한 경우": [],
-        "중등도의 도움이 필요한 경우": [],
-        "최대의 도움이 필요한 경우": [],
-        "과제를 수행할 수 없는 경우": []
-    }
+    **현재 평가**: {kmbi_score}점 - {status}
+    """)
+    
+    # 항목별 수행 수준 요약
+    st.subheader("📋 항목별 수행 수준 요약")
+    
+    # 수정된 부분: defaultdict 사용
+    from collections import defaultdict
+    level_groups = defaultdict(list)
     
     for item in kmbi_items:
-        level = data.get(item['key'], "완전히 독립적인 경우")
+        level = data.get(item['key'], kmbi_options[0])
         level_groups[level].append(item['name'])
     
-    for level, items in level_groups.items():
-        if items:
-            if level == "완전히 독립적인 경우":
-                st.success(f"**{level}**: {', '.join(items)}")
-            elif level == "최소의 도움이나 감독이 필요한 경우":
-                st.info(f"**{level}**: {', '.join(items)}")
-            elif level == "중등도의 도움이 필요한 경우":
-                st.warning(f"**{level}**: {', '.join(items)}")
-            else:
-                st.error(f"**{level}**: {', '.join(items)}")
+    # 레벨별 항목 표시
+    level_colors = {
+        "완전히 독립적인 경우": "🟢",
+        "최소한의 도움이 필요하거나 감시가 필요한 경우": "🟡",
+        "중등도의 도움이 필요한 경우": "🟠",
+        "최대의 도움이 필요한 경우": "🔴",
+        "과제를 수행할 수 없는 경우": "⚫"
+    }
     
-    # 데이터 저장
-    st.session_state.basic_data['k_mbi_score'] = kmbi_score
-    
-    # 각 항목의 선택값도 저장
-    for item in kmbi_items:
-        st.session_state.basic_data[item['key']] = data.get(item['key'], "완전히 독립적인 경우")
-    
-    navigation_buttons()
+    for level in kmbi_options[::-1]:  # 역순으로 표시 (독립 → 의존)
+        if level in level_groups and level_groups[level]:
+            st.markdown(f"{level_colors.get(level, '⚪')} **{level}**: {', '.join(level_groups[level])}")
+
+
 
 def show_page6_mmse():
     """6페이지: MMSE-K (간이정신상태검사 한국판) 평가"""
