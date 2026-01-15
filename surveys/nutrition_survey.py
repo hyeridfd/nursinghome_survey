@@ -16,16 +16,36 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             if response.data:
                 loaded_data = response.data[0]
                 
-                # JSON 문자열을 파싱
-                if 'food_intake_data' in loaded_data and loaded_data['food_intake_data']:
-                    if isinstance(loaded_data['food_intake_data'], str):
-                        loaded_data['food_intake_data'] = json.loads(loaded_data['food_intake_data'])
+                # JSONB 데이터를 세션에 매핑
+                st.session_state.nutrition_data = {
+                    # 신체 활동 데이터
+                    'vigorous_activity_days': loaded_data.get('vigorous_activity_days', 0),
+                    'vigorous_activity_time': loaded_data.get('vigorous_activity_time', 0),
+                    'moderate_activity_days': loaded_data.get('moderate_activity_days', 0),
+                    'moderate_activity_time': loaded_data.get('moderate_activity_time', 0),
+                    'walking_days': loaded_data.get('walking_days', 0),
+                    'walking_time': loaded_data.get('walking_time', 0),
+                    'sitting_time': loaded_data.get('sitting_time', 0),
+                    
+                    # 식사 데이터
+                    'food_intake_data': loaded_data.get('meal_portions', {}),  # meal_portions -> food_intake_data
+                    'leftover_data': loaded_data.get('plate_waste', {}),       # plate_waste -> leftover_data
+                    
+                    # MNA-SF 데이터
+                    'appetite_change': loaded_data.get('appetite_change', 2),
+                    'weight_change': loaded_data.get('weight_change', 3),
+                    'mobility': loaded_data.get('mobility', 2),
+                    'stress_illness': loaded_data.get('stress_illness', 2),
+                    'neuropsychological_problem': loaded_data.get('neuropsychological_problem', 2),
+                    'bmi_category': loaded_data.get('bmi_category', 3)
+                }
                 
-                if 'leftover_data' in loaded_data and loaded_data['leftover_data']:
-                    if isinstance(loaded_data['leftover_data'], str):
-                        loaded_data['leftover_data'] = json.loads(loaded_data['leftover_data'])
+                # 시작 날짜가 meal_portions에 있을 수 있으니 첫 날짜 추출
+                if loaded_data.get('meal_portions'):
+                    dates = list(loaded_data['meal_portions'].keys())
+                    if dates:
+                        st.session_state.nutrition_data['food_intake_start_date'] = dates[0]
                 
-                st.session_state.nutrition_data = loaded_data
             else:
                 st.session_state.nutrition_data = {}
         except Exception as e:
@@ -949,14 +969,9 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     try:
         data = st.session_state.nutrition_data.copy()
         
-        # JSON 직렬화 가능하도록 변환
-        food_intake_json = None
-        leftover_json = None
-        
-        if 'food_intake_data' in data:
-            food_intake_json = json.dumps(data.pop('food_intake_data'), ensure_ascii=False)
-        if 'leftover_data' in data:
-            leftover_json = json.dumps(data.pop('leftover_data'), ensure_ascii=False)
+        # 식품 섭취 및 잔반 데이터를 JSONB로 변환
+        meal_portions = data.get('food_intake_data', {})
+        plate_waste = data.get('leftover_data', {})
         
         # 기본 데이터 준비
         survey_data = {
@@ -964,6 +979,11 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
             'updated_at': datetime.now().isoformat(),
+            
+            # 5일간 식사 데이터 (JSONB)
+            'meal_portions': meal_portions,  # food_intake_data를 meal_portions로 저장
+            'plate_waste': plate_waste,      # leftover_data를 plate_waste로 저장
+            
             # 신체 활동 데이터
             'vigorous_activity_days': data.get('vigorous_activity_days', 0),
             'vigorous_activity_time': data.get('vigorous_activity_time', 0),
@@ -972,6 +992,7 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'walking_days': data.get('walking_days', 0),
             'walking_time': data.get('walking_time', 0),
             'sitting_time': data.get('sitting_time', 0),
+            
             # MNA-SF 데이터
             'appetite_change': data.get('appetite_change', 2),
             'weight_change': data.get('weight_change', 3),
@@ -980,14 +1001,6 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'neuropsychological_problem': data.get('neuropsychological_problem', 2),
             'bmi_category': data.get('bmi_category', 3)
         }
-        
-        # 식품 섭취 및 잔반 데이터 추가 (컬럼이 있는 경우에만)
-        if food_intake_json:
-            survey_data['food_intake_data'] = food_intake_json
-        if leftover_json:
-            survey_data['leftover_data'] = leftover_json
-        if 'food_intake_start_date' in data:
-            survey_data['food_intake_start_date'] = data.get('food_intake_start_date')
         
         # 기존 데이터 확인
         response = supabase.table('nutrition_survey').select('id').eq('elderly_id', elderly_id).execute()
@@ -1024,12 +1037,18 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         
     except Exception as e:
         st.error(f"저장 중 오류가 발생했습니다: {str(e)}")
-        st.error("데이터베이스 스키마를 확인해주세요. 필요한 컬럼이 존재하는지 확인하세요.")
         
         # 디버깅을 위한 정보 표시
-        with st.expander("🔍 디버깅 정보"):
-            st.write("저장하려던 데이터 키:")
-            st.json(list(survey_data.keys()))
+        with st.expander("🔍 상세 오류 정보"):
+            st.write("오류 메시지:", str(e))
+            st.write("저장하려던 데이터:")
+            st.json({
+                "meal_portions": "5일간 식사 데이터",
+                "plate_waste": "5일간 잔반 데이터",
+                "activity_data": "신체 활동 데이터",
+                "mna_data": "영양 상태 평가 데이터"
+            })
+
 
 def navigation_buttons():
     """페이지 이동 버튼"""
