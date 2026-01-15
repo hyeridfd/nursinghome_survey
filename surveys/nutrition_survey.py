@@ -324,7 +324,7 @@ def show_page3():
     """3페이지: 잔반량 조사(5일)"""
     st.subheader("🗑️ 잔반량 조사 (5일)")
     
-    st.info("📝 5일간의 식사별 잔반 중량을 그램(g) 단위로 기록해주세요.")
+    st.info("📝 5일간의 식사별 잔반량을 선택해주세요.")
     
     data = st.session_state.nutrition_data
     
@@ -343,24 +343,44 @@ def show_page3():
     if 'leftover_data' not in data:
         data['leftover_data'] = {}
     
-    # 식사 유형 정의 (섭취량과 동일)
-    meal_types = {
-        "조식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        },
-        "중식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        },
-        "석식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        }
+    # 잔반량 옵션 정의
+    leftover_options = {
+        "다 먹음": {"ratio": 0.0, "color": "#2E5266"},
+        "조금 남김": {"ratio": 0.25, "color": "#6E8898"},
+        "반 정도 남김": {"ratio": 0.5, "color": "#9FB1BC"},
+        "대부분 남김": {"ratio": 0.75, "color": "#D3D0CB"},
+        "모두 남김": {"ratio": 1.0, "color": "#E2E2E2"}
     }
+    
+    # CSS 스타일 추가
+    st.markdown("""
+    <style>
+    .leftover-option {
+        text-align: center;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+    .leftover-option:hover {
+        background-color: #f0f2f6;
+        transform: scale(1.05);
+    }
+    .leftover-circle {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 10px;
+        position: relative;
+        border-radius: 50%;
+        border: 2px dashed #ccc;
+    }
+    .leftover-label {
+        font-size: 14px;
+        font-weight: bold;
+        color: #333;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # 5일간 데이터 입력
     for day in range(5):
@@ -374,103 +394,109 @@ def show_page3():
         if date_str not in data['leftover_data']:
             data['leftover_data'][date_str] = {}
         
-        # 섭취량 데이터 참조 (있는 경우)
+        # 섭취량 데이터 참조
         intake_data_for_date = data.get('food_intake_data', {}).get(date_str, {})
         
         # 각 식사 시간대별 입력
-        tabs = st.tabs(["🌅 조식", "☀️ 중식", "🌙 석식"])
-        
-        for tab_idx, (meal_name, tab) in enumerate(zip(["조식", "중식", "석식"], tabs)):
-            with tab:
-                if meal_name not in data['leftover_data'][date_str]:
-                    data['leftover_data'][date_str][meal_name] = {}
-                
-                leftover_meal_data = data['leftover_data'][date_str][meal_name]
-                
-                # 섭취량에서 식사 유형 가져오기
-                intake_meal_data = intake_data_for_date.get(meal_name, {})
-                meal_type = intake_meal_data.get('meal_type', '일반식')
-                
-                st.info(f"식사 유형: **{meal_type}** (섭취량 조사 기준)")
-                leftover_meal_data['meal_type'] = meal_type
-                
-                # 일반식 입력
-                if meal_type == "일반식":
-                    st.markdown("**일반식 잔반**")
-                    cols = st.columns(3)
-                    for idx, item in enumerate(meal_types[meal_name]["일반식"]):
-                        with cols[idx % 3]:
-                            # 섭취량 표시
-                            intake_amount = intake_meal_data.get(item, 0)
-                            
-                            value = st.number_input(
-                                f"{item} (g)",
-                                min_value=0,
-                                max_value=int(intake_amount) if intake_amount else 2000,
-                                value=int(leftover_meal_data.get(item, 0)) if leftover_meal_data.get(item) else 0,
-                                step=10,
-                                key=f"leftover_{date_str}_{meal_name}_{item}",
-                                help=f"제공량: {intake_amount}g"
-                            )
-                            leftover_meal_data[item] = value
-                            
-                            # 실제 섭취량 표시
-                            actual_intake = intake_amount - value
-                            if actual_intake < 0:
-                                st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
-                            else:
-                                st.caption(f"실제 섭취: {actual_intake}g")
-                
-                # 죽식 입력
-                else:
-                    st.markdown("**죽식 잔반**")
-                    intake_amount = intake_meal_data.get('죽', 0)
+        for meal_name in ["조식", "중식", "석식"]:
+            if meal_name not in data['leftover_data'][date_str]:
+                data['leftover_data'][date_str][meal_name] = {}
+            
+            leftover_meal_data = data['leftover_data'][date_str][meal_name]
+            intake_meal_data = intake_data_for_date.get(meal_name, {})
+            
+            # 식사 아이콘
+            meal_icons = {"조식": "🌅", "중식": "☀️", "석식": "🌙"}
+            
+            st.markdown(f"#### {meal_icons[meal_name]} {meal_name}")
+            
+            # 잔반량 선택 (원형 도식)
+            col1, col2, col3, col4, col5 = st.columns(5)
+            cols = [col1, col2, col3, col4, col5]
+            
+            current_selection = leftover_meal_data.get('leftover_option', '다 먹음')
+            
+            for idx, (option, details) in enumerate(leftover_options.items()):
+                with cols[idx]:
+                    # SVG로 원형 차트 생성
+                    ratio = details['ratio']
+                    color = details['color']
                     
-                    value = st.number_input(
-                        "죽 (g)",
-                        min_value=0,
-                        max_value=int(intake_amount) if intake_amount else 2000,
-                        value=int(leftover_meal_data.get('죽', 0)) if leftover_meal_data.get('죽') else 0,
-                        step=10,
-                        key=f"leftover_{date_str}_{meal_name}_죽",
-                        help=f"제공량: {intake_amount}g"
-                    )
-                    leftover_meal_data['죽'] = value
-                    
-                    actual_intake = intake_amount - value
-                    if actual_intake < 0:
-                        st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
+                    # 원형 차트 SVG
+                    if ratio == 0:
+                        # 다 먹음 - 빈 원
+                        svg_chart = f"""
+                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
+                            <circle cx="40" cy="40" r="38" fill="none" stroke="#ccc" stroke-width="2" stroke-dasharray="5,5"/>
+                        </svg>
+                        """
+                    elif ratio == 1:
+                        # 모두 남김 - 꽉 찬 원
+                        svg_chart = f"""
+                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
+                            <circle cx="40" cy="40" r="38" fill="{color}" stroke="#2E5266" stroke-width="2"/>
+                        </svg>
+                        """
                     else:
-                        st.success(f"실제 섭취: {actual_intake}g")
+                        # 부분적으로 채워진 원 (파이 차트)
+                        angle = ratio * 360
+                        large_arc = 1 if angle > 180 else 0
+                        
+                        # 각도를 라디안으로 변환
+                        import math
+                        end_angle = math.radians(angle - 90)  # -90도에서 시작 (12시 방향)
+                        end_x = 40 + 38 * math.cos(end_angle)
+                        end_y = 40 + 38 * math.sin(end_angle)
+                        
+                        svg_chart = f"""
+                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
+                            <circle cx="40" cy="40" r="38" fill="white" stroke="#ccc" stroke-width="2" stroke-dasharray="5,5"/>
+                            <path d="M 40 40 L 40 2 A 38 38 0 {large_arc} 1 {end_x} {end_y} Z" 
+                                  fill="{color}" stroke="#2E5266" stroke-width="2"/>
+                        </svg>
+                        """
+                    
+                    st.markdown(svg_chart, unsafe_allow_html=True)
+                    
+                    # 라디오 버튼처럼 동작
+                    is_selected = (current_selection == option)
+                    
+                    if st.button(
+                        option,
+                        key=f"leftover_{date_str}_{meal_name}_{option}",
+                        use_container_width=True,
+                        type="primary" if is_selected else "secondary"
+                    ):
+                        leftover_meal_data['leftover_option'] = option
+                        leftover_meal_data['leftover_ratio'] = ratio
+                        st.rerun()
+            
+            # 현재 선택 표시
+            st.info(f"선택: **{current_selection}** (잔반 비율: {leftover_meal_data.get('leftover_ratio', 0)*100:.0f}%)")
+            
+            # 제공량 기반 실제 섭취량 계산
+            total_provided = 0
+            for key, value in intake_meal_data.items():
+                if key != 'meal_type' and isinstance(value, (int, float)):
+                    total_provided += value
+            
+            if total_provided > 0:
+                leftover_ratio = leftover_meal_data.get('leftover_ratio', 0)
+                actual_intake = total_provided * (1 - leftover_ratio)
+                leftover_amount = total_provided * leftover_ratio
                 
-                # 간식 입력
-                st.markdown("**간식 잔반**")
-                cols = st.columns(2)
-                for idx, item in enumerate(meal_types[meal_name]["간식"]):
-                    with cols[idx]:
-                        intake_amount = intake_meal_data.get(item, 0)
-                        
-                        value = st.number_input(
-                            f"{item} (g)",
-                            min_value=0,
-                            max_value=int(intake_amount) if intake_amount else 1000,
-                            value=int(leftover_meal_data.get(item, 0)) if leftover_meal_data.get(item) else 0,
-                            step=10,
-                            key=f"leftover_{date_str}_{meal_name}_{item}",
-                            help=f"제공량: {intake_amount}g"
-                        )
-                        leftover_meal_data[item] = value
-                        
-                        actual_intake = intake_amount - value
-                        if actual_intake < 0:
-                            st.warning(f"⚠️ 잔반량이 제공량을 초과합니다")
-                        else:
-                            st.caption(f"실제 섭취: {actual_intake}g")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("제공량", f"{total_provided:.0f}g")
+                with col2:
+                    st.metric("실제 섭취", f"{actual_intake:.0f}g")
+                with col3:
+                    st.metric("잔반량", f"{leftover_amount:.0f}g")
     
     # 데이터 저장
     st.session_state.nutrition_data['leftover_data'] = data['leftover_data']
     
-    # 일일 잔반량 및 섭취율 요약
+    # 5일간 섭취율 요약
     st.markdown("---")
     st.subheader("📊 5일간 섭취율 요약")
     
@@ -480,8 +506,8 @@ def show_page3():
         date_str = current_date.strftime("%Y-%m-%d")
         day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
         
-        daily_intake_total = 0
-        daily_leftover_total = 0
+        daily_provided = 0
+        daily_actual_intake = 0
         
         # 제공량 계산
         if date_str in data.get('food_intake_data', {}):
@@ -490,54 +516,72 @@ def show_page3():
                     meal_data = data['food_intake_data'][date_str][meal_name]
                     for key, value in meal_data.items():
                         if key != 'meal_type' and isinstance(value, (int, float)):
-                            daily_intake_total += value
+                            daily_provided += value
         
-        # 잔반량 계산
+        # 실제 섭취량 계산
         if date_str in data.get('leftover_data', {}):
             for meal_name in ["조식", "중식", "석식"]:
                 if meal_name in data['leftover_data'][date_str]:
                     meal_data = data['leftover_data'][date_str][meal_name]
-                    for key, value in meal_data.items():
-                        if key != 'meal_type' and isinstance(value, (int, float)):
-                            daily_leftover_total += value
+                    leftover_ratio = meal_data.get('leftover_ratio', 0)
+                    
+                    # 해당 식사의 제공량
+                    meal_provided = 0
+                    if date_str in data.get('food_intake_data', {}):
+                        if meal_name in data['food_intake_data'][date_str]:
+                            intake_meal = data['food_intake_data'][date_str][meal_name]
+                            for key, value in intake_meal.items():
+                                if key != 'meal_type' and isinstance(value, (int, float)):
+                                    meal_provided += value
+                    
+                    daily_actual_intake += meal_provided * (1 - leftover_ratio)
         
-        # 실제 섭취량 및 섭취율 계산
-        actual_intake = daily_intake_total - daily_leftover_total
-        intake_rate = (actual_intake / daily_intake_total * 100) if daily_intake_total > 0 else 0
+        intake_rate = (daily_actual_intake / daily_provided * 100) if daily_provided > 0 else 0
         
         summary_data.append({
             "날짜": f"{current_date.strftime('%m/%d')}({day_name})",
-            "제공량": daily_intake_total,
-            "잔반량": daily_leftover_total,
-            "실제섭취": actual_intake,
+            "제공량": daily_provided,
+            "실제섭취": daily_actual_intake,
             "섭취율": intake_rate
         })
     
     cols = st.columns(5)
     for idx, day_data in enumerate(summary_data):
         with cols[idx]:
+            # 섭취율에 따른 색상
+            if day_data['섭취율'] >= 80:
+                delta_color = "normal"
+            elif day_data['섭취율'] >= 60:
+                delta_color = "off"
+            else:
+                delta_color = "inverse"
+            
             st.metric(
                 day_data["날짜"],
                 f"{day_data['섭취율']:.1f}%",
-                f"{day_data['실제섭취']}g"
+                f"{day_data['실제섭취']:.0f}g"
             )
-            st.caption(f"제공: {day_data['제공량']}g")
-            st.caption(f"잔반: {day_data['잔반량']}g")
+            st.caption(f"제공: {day_data['제공량']:.0f}g")
     
     # 5일 평균 섭취율
-    avg_intake_rate = sum(d['섭취율'] for d in summary_data) / len(summary_data)
+    avg_intake_rate = sum(d['섭취율'] for d in summary_data) / len(summary_data) if summary_data else 0
     
     st.markdown("---")
-    st.info(f"📊 **5일 평균 섭취율: {avg_intake_rate:.1f}%**")
     
-    if avg_intake_rate >= 80:
-        st.success("✅ 양호한 섭취율입니다.")
-    elif avg_intake_rate >= 60:
-        st.warning("⚠️ 섭취율이 다소 낮습니다. 식사 관리가 필요합니다.")
-    else:
-        st.error("🚨 섭취율이 매우 낮습니다. 영양 상담이 필요합니다.")
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.metric("5일 평균 섭취율", f"{avg_intake_rate:.1f}%")
+    
+    with col2:
+        if avg_intake_rate >= 80:
+            st.success("✅ 양호한 섭취율입니다.")
+        elif avg_intake_rate >= 60:
+            st.warning("⚠️ 섭취율이 다소 낮습니다. 식사 관리가 필요합니다.")
+        else:
+            st.error("🚨 섭취율이 매우 낮습니다. 영양 상담이 필요합니다.")
     
     navigation_buttons()
+
 
 def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
     """4페이지: 영양 상태 평가 (MNA-SF) 및 제출"""
