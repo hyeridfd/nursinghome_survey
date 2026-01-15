@@ -14,14 +14,26 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         try:
             response = supabase.table('nutrition_survey').select('*').eq('elderly_id', elderly_id).execute()
             if response.data:
-                st.session_state.nutrition_data = response.data[0]
+                loaded_data = response.data[0]
+                
+                # JSON 문자열을 파싱
+                if 'food_intake_data' in loaded_data and loaded_data['food_intake_data']:
+                    if isinstance(loaded_data['food_intake_data'], str):
+                        loaded_data['food_intake_data'] = json.loads(loaded_data['food_intake_data'])
+                
+                if 'leftover_data' in loaded_data and loaded_data['leftover_data']:
+                    if isinstance(loaded_data['leftover_data'], str):
+                        loaded_data['leftover_data'] = json.loads(loaded_data['leftover_data'])
+                
+                st.session_state.nutrition_data = loaded_data
             else:
                 st.session_state.nutrition_data = {}
-        except:
+        except Exception as e:
+            st.warning(f"기존 데이터 불러오기 실패: {str(e)}")
             st.session_state.nutrition_data = {}
     
     # 페이지 진행 표시
-    total_pages = 4  # 2페이지에서 4페이지로 증가
+    total_pages = 4
     st.progress(st.session_state.nutrition_page / total_pages)
     st.caption(f"페이지 {st.session_state.nutrition_page} / {total_pages}")
     
@@ -938,46 +950,86 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         data = st.session_state.nutrition_data.copy()
         
         # JSON 직렬화 가능하도록 변환
-        if 'food_intake_data' in data:
-            data['food_intake_data'] = json.dumps(data['food_intake_data'])
-        if 'leftover_data' in data:
-            data['leftover_data'] = json.dumps(data['leftover_data'])
+        food_intake_json = None
+        leftover_json = None
         
-        data.update({
+        if 'food_intake_data' in data:
+            food_intake_json = json.dumps(data.pop('food_intake_data'), ensure_ascii=False)
+        if 'leftover_data' in data:
+            leftover_json = json.dumps(data.pop('leftover_data'), ensure_ascii=False)
+        
+        # 기본 데이터 준비
+        survey_data = {
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
-            'updated_at': datetime.now().isoformat()
-        })
+            'updated_at': datetime.now().isoformat(),
+            # 신체 활동 데이터
+            'vigorous_activity_days': data.get('vigorous_activity_days', 0),
+            'vigorous_activity_time': data.get('vigorous_activity_time', 0),
+            'moderate_activity_days': data.get('moderate_activity_days', 0),
+            'moderate_activity_time': data.get('moderate_activity_time', 0),
+            'walking_days': data.get('walking_days', 0),
+            'walking_time': data.get('walking_time', 0),
+            'sitting_time': data.get('sitting_time', 0),
+            # MNA-SF 데이터
+            'appetite_change': data.get('appetite_change', 2),
+            'weight_change': data.get('weight_change', 3),
+            'mobility': data.get('mobility', 2),
+            'stress_illness': data.get('stress_illness', 2),
+            'neuropsychological_problem': data.get('neuropsychological_problem', 2),
+            'bmi_category': data.get('bmi_category', 3)
+        }
+        
+        # 식품 섭취 및 잔반 데이터 추가 (컬럼이 있는 경우에만)
+        if food_intake_json:
+            survey_data['food_intake_data'] = food_intake_json
+        if leftover_json:
+            survey_data['leftover_data'] = leftover_json
+        if 'food_intake_start_date' in data:
+            survey_data['food_intake_start_date'] = data.get('food_intake_start_date')
         
         # 기존 데이터 확인
         response = supabase.table('nutrition_survey').select('id').eq('elderly_id', elderly_id).execute()
         
         if response.data:
             # 업데이트
-            supabase.table('nutrition_survey').update(data).eq('elderly_id', elderly_id).execute()
+            supabase.table('nutrition_survey').update(survey_data).eq('elderly_id', elderly_id).execute()
+            st.success("✅ 영양 조사표가 업데이트되었습니다!")
         else:
             # 새로 추가
-            supabase.table('nutrition_survey').insert(data).execute()
+            supabase.table('nutrition_survey').insert(survey_data).execute()
+            st.success("✅ 영양 조사표가 저장되었습니다!")
         
         # 진행 상황 업데이트
-        supabase.table('survey_progress').update({
-            'nutrition_survey_completed': True,
-            'last_updated': datetime.now().isoformat()
-        }).eq('elderly_id', elderly_id).execute()
-        
-        st.success("✅ 영양 조사표가 저장되었습니다!")
+        try:
+            supabase.table('survey_progress').update({
+                'nutrition_survey_completed': True,
+                'last_updated': datetime.now().isoformat()
+            }).eq('elderly_id', elderly_id).execute()
+        except Exception as e:
+            st.warning(f"진행 상황 업데이트 실패: {str(e)}")
         
         # 세션 초기화
-        del st.session_state.nutrition_data
-        del st.session_state.nutrition_page
+        if 'nutrition_data' in st.session_state:
+            del st.session_state.nutrition_data
+        if 'nutrition_page' in st.session_state:
+            del st.session_state.nutrition_page
         st.session_state.current_survey = None
+        
+        st.balloons()
         
         if st.button("대시보드로 돌아가기"):
             st.rerun()
         
     except Exception as e:
         st.error(f"저장 중 오류가 발생했습니다: {str(e)}")
+        st.error("데이터베이스 스키마를 확인해주세요. 필요한 컬럼이 존재하는지 확인하세요.")
+        
+        # 디버깅을 위한 정보 표시
+        with st.expander("🔍 디버깅 정보"):
+            st.write("저장하려던 데이터 키:")
+            st.json(list(survey_data.keys()))
 
 def navigation_buttons():
     """페이지 이동 버튼"""
