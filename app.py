@@ -14,10 +14,18 @@ from surveys.satisfaction_survey import show_satisfaction_survey
 # Supabase 초기화
 @st.cache_resource
 def init_supabase():
+    url = None
+    key = None
+    
     # Streamlit secrets 우선 확인
     if hasattr(st, 'secrets') and 'SUPABASE_URL' in st.secrets:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
+    else:
+        # 환경 변수에서 가져오기
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
+    
     if not url or not key:
         st.error("⚠️ Supabase 설정이 필요합니다. Streamlit Cloud의 Secrets 또는 로컬 .env 파일을 확인해주세요.")
         st.stop()
