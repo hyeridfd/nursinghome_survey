@@ -346,8 +346,8 @@ def show_page5_kmbi():
         {"name": "대변조절", "description": "대변 조절 능력", "key": "kmbi_7"},
         {"name": "소변조절", "description": "소변 조절 능력", "key": "kmbi_8"},
         {"name": "보행", "description": "실내외 이동", "key": "kmbi_9"},
-        {"name": "의자차", "description": "의자차", "key": "kmbi_10"},
-        {"name": "의차/침대 이동", "description": "의자/침대 이동", "key": "kmbi_11"}
+        {"name": "의자차", "description": "휠체어 사용", "key": "kmbi_10"},
+        {"name": "의자/침대 이동", "description": "의자나 침대로의 이동", "key": "kmbi_11"}
     ]
     
     # CSS 스타일
