@@ -1030,8 +1030,6 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             del st.session_state.nutrition_page
         st.session_state.current_survey = None
         
-        st.balloons()
-        
         if st.button("대시보드로 돌아가기"):
             st.rerun()
         
