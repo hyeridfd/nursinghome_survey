@@ -452,6 +452,7 @@ def show_page5_kmbi():
     for level in kmbi_options[::-1]:  # 역순으로 표시 (독립 → 의존)
         if level in level_groups and level_groups[level]:
             st.markdown(f"{level_colors.get(level, '⚪')} **{level}**: {', '.join(level_groups[level])}")
+    navigation_buttons()
 
 
 
