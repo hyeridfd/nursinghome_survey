@@ -720,7 +720,7 @@ def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
 
 def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     """
-    기초 조사 데이터를 Supabase에 저장 (K-MBI 텍스트→숫자 변환 포함)
+    기초 조사 데이터를 Supabase에 저장
     """
     try:
         data = st.session_state.basic_data
@@ -791,10 +791,11 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         if 'medications' in data and 'medications' in available_columns:
             survey_data['medications'] = json.dumps(data['medications'])
         
-        # === 5단계: K-MBI 데이터 (텍스트→숫자 변환) ===
+        # === 5단계: K-MBI 데이터 (텍스트→숫자 변환 + 정수 변환) ===
         if 'k_mbi_score' in available_columns:
             if 'k_mbi_score' in data:
-                survey_data['k_mbi_score'] = data['k_mbi_score']
+                # ✅ 소수점을 정수로 변환 (반올림)
+                survey_data['k_mbi_score'] = int(round(data['k_mbi_score']))
             
             # K-MBI 각 항목 변환 (텍스트 → 점수)
             for i in range(1, 12):
@@ -805,11 +806,11 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
                     if isinstance(value, str):
                         survey_data[col_name] = kmbi_score_mapping.get(value, 0)
                     else:
-                        survey_data[col_name] = value
+                        survey_data[col_name] = int(value) if value is not None else 0
         else:
             st.warning("⚠️ K-MBI 데이터는 저장되지 않았습니다. (데이터베이스 컬럼 없음)")
         
-        # === 6단계: MMSE-K 데이터 ===
+        # === 6단계: MMSE-K 데이터 (정수 변환) ===
         mmse_fields = [
             'mmse_score', 'mmse_time_orientation', 'mmse_place_orientation',
             'mmse_registration', 'mmse_attention_calculation', 'mmse_recall',
@@ -820,7 +821,9 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         mmse_saved = False
         for field in mmse_fields:
             if field in available_columns and field in data:
-                survey_data[field] = data[field]
+                value = data[field]
+                # ✅ 정수로 변환
+                survey_data[field] = int(value) if value is not None else 0
                 mmse_saved = True
         
         if not mmse_saved and any(f in data for f in mmse_fields):
@@ -872,6 +875,7 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             if 'mmse_score' in survey_data:
                 st.metric("MMSE-K 총점", f"{survey_data['mmse_score']}/30점")
         
+        st.balloons()
         
         # 세션 초기화
         if 'basic_data' in st.session_state:
@@ -900,7 +904,6 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             
             st.write("**오류 메시지:**")
             st.code(str(e))
-
 
 def navigation_buttons():
     """페이지 이동 버튼"""
