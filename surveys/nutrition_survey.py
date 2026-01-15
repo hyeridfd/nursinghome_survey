@@ -344,40 +344,104 @@ def show_page3():
         data['leftover_data'] = {}
     
     # 잔반량 옵션 정의
-    leftover_options = {
-        "다 먹음": {"ratio": 0.0, "color": "#2E5266"},
-        "조금 남김": {"ratio": 0.25, "color": "#6E8898"},
-        "반 정도 남김": {"ratio": 0.5, "color": "#9FB1BC"},
-        "대부분 남김": {"ratio": 0.75, "color": "#D3D0CB"},
-        "모두 남김": {"ratio": 1.0, "color": "#E2E2E2"}
-    }
+    leftover_options = [
+        {"label": "다 먹음", "ratio": 0.0, "color": "#FFFFFF", "stroke": "#2E5266"},
+        {"label": "조금 남김", "ratio": 0.25, "color": "#2E5266"},
+        {"label": "반 정도 남김", "ratio": 0.5, "color": "#2E5266"},
+        {"label": "대부분 남김", "ratio": 0.75, "color": "#2E5266"},
+        {"label": "모두 남김", "ratio": 1.0, "color": "#2E5266"}
+    ]
     
-    # CSS 스타일 추가
+    def create_pie_chart_svg(ratio, color, size=60, is_selected=False):
+        """원형 차트 SVG 생성"""
+        import math
+        
+        border_color = "#FF6B6B" if is_selected else "#CCCCCC"
+        border_width = 3 if is_selected else 1.5
+        
+        if ratio == 0:
+            # 다 먹음 - 빈 원 (점선)
+            return f"""
+            <svg width="{size}" height="{size}" style="margin: 0 auto; display: block;">
+                <circle cx="{size/2}" cy="{size/2}" r="{size/2-2}" 
+                        fill="white" 
+                        stroke="{border_color}" 
+                        stroke-width="{border_width}" 
+                        stroke-dasharray="3,3"/>
+            </svg>
+            """
+        elif ratio == 1.0:
+            # 모두 남김 - 완전히 채워진 원
+            return f"""
+            <svg width="{size}" height="{size}" style="margin: 0 auto; display: block;">
+                <circle cx="{size/2}" cy="{size/2}" r="{size/2-2}" 
+                        fill="{color}" 
+                        stroke="{border_color}" 
+                        stroke-width="{border_width}"/>
+            </svg>
+            """
+        else:
+            # 부분 채움 - 파이 차트
+            angle = ratio * 360
+            large_arc = 1 if angle > 180 else 0
+            
+            end_angle_rad = math.radians(angle - 90)
+            radius = size/2 - 2
+            center = size/2
+            end_x = center + radius * math.cos(end_angle_rad)
+            end_y = center + radius * math.sin(end_angle_rad)
+            
+            return f"""
+            <svg width="{size}" height="{size}" style="margin: 0 auto; display: block;">
+                <circle cx="{center}" cy="{center}" r="{radius}" 
+                        fill="white" 
+                        stroke="{border_color}" 
+                        stroke-width="{border_width}"/>
+                <path d="M {center} {center} L {center} {2} A {radius} {radius} 0 {large_arc} 1 {end_x} {end_y} Z" 
+                      fill="{color}" 
+                      stroke="{border_color}" 
+                      stroke-width="{border_width}"/>
+            </svg>
+            """
+    
+    # CSS 스타일
     st.markdown("""
     <style>
-    .leftover-option {
+    .leftover-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .leftover-option-box {
         text-align: center;
         padding: 10px;
+        border-radius: 8px;
+        border: 2px solid transparent;
         cursor: pointer;
-        border-radius: 10px;
-        transition: all 0.3s;
+        transition: all 0.2s;
+        background-color: white;
     }
-    .leftover-option:hover {
-        background-color: #f0f2f6;
-        transform: scale(1.05);
+    .leftover-option-box:hover {
+        border-color: #FF6B6B;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .leftover-circle {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 10px;
-        position: relative;
-        border-radius: 50%;
-        border: 2px dashed #ccc;
+    .leftover-option-selected {
+        border-color: #FF6B6B !important;
+        background-color: #FFF5F5 !important;
     }
     .leftover-label {
-        font-size: 14px;
-        font-weight: bold;
+        font-size: 13px;
+        font-weight: 600;
         color: #333;
+        margin-top: 8px;
+    }
+    .meal-section {
+        background-color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #e0e0e0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -398,81 +462,72 @@ def show_page3():
         intake_data_for_date = data.get('food_intake_data', {}).get(date_str, {})
         
         # 각 식사 시간대별 입력
-        for meal_name in ["조식", "중식", "석식"]:
+        meal_info = [
+            ("조식", "🌅", "#FFF3E0"),
+            ("중식", "☀️", "#E3F2FD"),
+            ("석식", "🌙", "#F3E5F5")
+        ]
+        
+        for meal_name, meal_icon, meal_bg_color in meal_info:
             if meal_name not in data['leftover_data'][date_str]:
-                data['leftover_data'][date_str][meal_name] = {}
+                data['leftover_data'][date_str][meal_name] = {
+                    'leftover_option': '다 먹음',
+                    'leftover_ratio': 0.0
+                }
             
             leftover_meal_data = data['leftover_data'][date_str][meal_name]
             intake_meal_data = intake_data_for_date.get(meal_name, {})
             
-            # 식사 아이콘
-            meal_icons = {"조식": "🌅", "중식": "☀️", "석식": "🌙"}
-            
-            st.markdown(f"#### {meal_icons[meal_name]} {meal_name}")
-            
-            # 잔반량 선택 (원형 도식)
-            col1, col2, col3, col4, col5 = st.columns(5)
-            cols = [col1, col2, col3, col4, col5]
+            # 식사 섹션
+            st.markdown(f"""
+            <div class="meal-section" style="background-color: {meal_bg_color};">
+                <h4 style="margin: 0 0 15px 0;">{meal_icon} {meal_name}</h4>
+            </div>
+            """, unsafe_allow_html=True)
             
             current_selection = leftover_meal_data.get('leftover_option', '다 먹음')
             
-            for idx, (option, details) in enumerate(leftover_options.items()):
+            # 5개 옵션을 한 줄에 배치
+            cols = st.columns(5)
+            
+            for idx, option_data in enumerate(leftover_options):
                 with cols[idx]:
-                    # SVG로 원형 차트 생성
-                    ratio = details['ratio']
-                    color = details['color']
+                    option_label = option_data['label']
+                    option_ratio = option_data['ratio']
+                    option_color = option_data['color']
+                    
+                    is_selected = (current_selection == option_label)
                     
                     # 원형 차트 SVG
-                    if ratio == 0:
-                        # 다 먹음 - 빈 원
-                        svg_chart = f"""
-                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
-                            <circle cx="40" cy="40" r="38" fill="none" stroke="#ccc" stroke-width="2" stroke-dasharray="5,5"/>
-                        </svg>
-                        """
-                    elif ratio == 1:
-                        # 모두 남김 - 꽉 찬 원
-                        svg_chart = f"""
-                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
-                            <circle cx="40" cy="40" r="38" fill="{color}" stroke="#2E5266" stroke-width="2"/>
-                        </svg>
-                        """
-                    else:
-                        # 부분적으로 채워진 원 (파이 차트)
-                        angle = ratio * 360
-                        large_arc = 1 if angle > 180 else 0
-                        
-                        # 각도를 라디안으로 변환
-                        import math
-                        end_angle = math.radians(angle - 90)  # -90도에서 시작 (12시 방향)
-                        end_x = 40 + 38 * math.cos(end_angle)
-                        end_y = 40 + 38 * math.sin(end_angle)
-                        
-                        svg_chart = f"""
-                        <svg width="80" height="80" style="margin: 0 auto; display: block;">
-                            <circle cx="40" cy="40" r="38" fill="white" stroke="#ccc" stroke-width="2" stroke-dasharray="5,5"/>
-                            <path d="M 40 40 L 40 2 A 38 38 0 {large_arc} 1 {end_x} {end_y} Z" 
-                                  fill="{color}" stroke="#2E5266" stroke-width="2"/>
-                        </svg>
-                        """
+                    svg_chart = create_pie_chart_svg(
+                        option_ratio, 
+                        option_color, 
+                        size=70, 
+                        is_selected=is_selected
+                    )
                     
-                    st.markdown(svg_chart, unsafe_allow_html=True)
+                    # 컨테이너
+                    container_class = "leftover-option-selected" if is_selected else ""
                     
-                    # 라디오 버튼처럼 동작
-                    is_selected = (current_selection == option)
+                    st.markdown(f"""
+                    <div class="leftover-option-box {container_class}">
+                        {svg_chart}
+                        <div class="leftover-label">{option_label}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
+                    # 버튼 (숨김 처리하고 클릭만 감지)
                     if st.button(
-                        option,
-                        key=f"leftover_{date_str}_{meal_name}_{option}",
-                        use_container_width=True,
-                        type="primary" if is_selected else "secondary"
+                        "선택",
+                        key=f"leftover_{date_str}_{meal_name}_{option_label}",
+                        use_container_width=True
                     ):
-                        leftover_meal_data['leftover_option'] = option
-                        leftover_meal_data['leftover_ratio'] = ratio
+                        leftover_meal_data['leftover_option'] = option_label
+                        leftover_meal_data['leftover_ratio'] = option_ratio
                         st.rerun()
             
-            # 현재 선택 표시
-            st.info(f"선택: **{current_selection}** (잔반 비율: {leftover_meal_data.get('leftover_ratio', 0)*100:.0f}%)")
+            # 현재 선택 및 섭취량 정보
+            st.markdown("<br>", unsafe_allow_html=True)
             
             # 제공량 기반 실제 섭취량 계산
             total_provided = 0
@@ -484,14 +539,19 @@ def show_page3():
                 leftover_ratio = leftover_meal_data.get('leftover_ratio', 0)
                 actual_intake = total_provided * (1 - leftover_ratio)
                 leftover_amount = total_provided * leftover_ratio
+                intake_percentage = (1 - leftover_ratio) * 100
                 
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("제공량", f"{total_provided:.0f}g")
+                    st.metric("선택", current_selection)
                 with col2:
-                    st.metric("실제 섭취", f"{actual_intake:.0f}g")
+                    st.metric("제공량", f"{total_provided:.0f}g")
                 with col3:
+                    st.metric("실제 섭취", f"{actual_intake:.0f}g", f"{intake_percentage:.0f}%")
+                with col4:
                     st.metric("잔반량", f"{leftover_amount:.0f}g")
+            else:
+                st.info(f"✓ 선택: **{current_selection}**")
     
     # 데이터 저장
     st.session_state.nutrition_data['leftover_data'] = data['leftover_data']
@@ -545,43 +605,45 @@ def show_page3():
             "섭취율": intake_rate
         })
     
+    # 요약 테이블
     cols = st.columns(5)
     for idx, day_data in enumerate(summary_data):
         with cols[idx]:
-            # 섭취율에 따른 색상
-            if day_data['섭취율'] >= 80:
-                delta_color = "normal"
-            elif day_data['섭취율'] >= 60:
-                delta_color = "off"
-            else:
-                delta_color = "inverse"
-            
-            st.metric(
-                day_data["날짜"],
-                f"{day_data['섭취율']:.1f}%",
-                f"{day_data['실제섭취']:.0f}g"
-            )
-            st.caption(f"제공: {day_data['제공량']:.0f}g")
+            st.markdown(f"""
+            <div style="text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 10px;">
+                <div style="font-weight: bold; margin-bottom: 10px;">{day_data['날짜']}</div>
+                <div style="font-size: 24px; color: #2E5266; font-weight: bold;">{day_data['섭취율']:.1f}%</div>
+                <div style="color: #666; margin-top: 5px;">제공: {day_data['제공량']:.0f}g</div>
+                <div style="color: #666;">섭취: {day_data['실제섭취']:.0f}g</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     # 5일 평균 섭취율
     avg_intake_rate = sum(d['섭취율'] for d in summary_data) / len(summary_data) if summary_data else 0
+    total_provided = sum(d['제공량'] for d in summary_data)
+    total_intake = sum(d['실제섭취'] for d in summary_data)
     
     st.markdown("---")
     
-    col1, col2 = st.columns([1, 2])
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("5일 평균 섭취율", f"{avg_intake_rate:.1f}%")
-    
+        st.metric("5일 총 제공량", f"{total_provided:.0f}g")
     with col2:
-        if avg_intake_rate >= 80:
-            st.success("✅ 양호한 섭취율입니다.")
-        elif avg_intake_rate >= 60:
-            st.warning("⚠️ 섭취율이 다소 낮습니다. 식사 관리가 필요합니다.")
-        else:
-            st.error("🚨 섭취율이 매우 낮습니다. 영양 상담이 필요합니다.")
+        st.metric("5일 총 섭취량", f"{total_intake:.0f}g")
+    with col3:
+        st.metric("평균 섭취율", f"{avg_intake_rate:.1f}%")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 평가
+    if avg_intake_rate >= 80:
+        st.success("✅ 양호한 섭취율입니다. 영양 상태가 우수합니다.")
+    elif avg_intake_rate >= 60:
+        st.warning("⚠️ 섭취율이 다소 낮습니다. 식사 환경 및 메뉴 개선이 필요합니다.")
+    else:
+        st.error("🚨 섭취율이 매우 낮습니다. 즉시 영양 상담 및 개입이 필요합니다.")
     
     navigation_buttons()
-
 
 def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
     """4페이지: 영양 상태 평가 (MNA-SF) 및 제출"""
