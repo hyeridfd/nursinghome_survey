@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("🥗 2. 영양 조사표")
@@ -14,45 +14,13 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         try:
             response = supabase.table('nutrition_survey').select('*').eq('elderly_id', elderly_id).execute()
             if response.data:
-                loaded_data = response.data[0]
-                
-                # JSONB 데이터를 세션에 매핑
-                st.session_state.nutrition_data = {
-                    # 신체 활동 데이터
-                    'vigorous_activity_days': loaded_data.get('vigorous_activity_days', 0),
-                    'vigorous_activity_time': loaded_data.get('vigorous_activity_time', 0),
-                    'moderate_activity_days': loaded_data.get('moderate_activity_days', 0),
-                    'moderate_activity_time': loaded_data.get('moderate_activity_time', 0),
-                    'walking_days': loaded_data.get('walking_days', 0),
-                    'walking_time': loaded_data.get('walking_time', 0),
-                    'sitting_time': loaded_data.get('sitting_time', 0),
-                    
-                    # 식사 데이터
-                    'food_intake_data': loaded_data.get('meal_portions', {}),  # meal_portions -> food_intake_data
-                    'leftover_data': loaded_data.get('plate_waste', {}),       # plate_waste -> leftover_data
-                    
-                    # MNA-SF 데이터
-                    'appetite_change': loaded_data.get('appetite_change', 2),
-                    'weight_change': loaded_data.get('weight_change', 3),
-                    'mobility': loaded_data.get('mobility', 2),
-                    'stress_illness': loaded_data.get('stress_illness', 2),
-                    'neuropsychological_problem': loaded_data.get('neuropsychological_problem', 2),
-                    'bmi_category': loaded_data.get('bmi_category', 3)
-                }
-                
-                # 시작 날짜가 meal_portions에 있을 수 있으니 첫 날짜 추출
-                if loaded_data.get('meal_portions'):
-                    dates = list(loaded_data['meal_portions'].keys())
-                    if dates:
-                        st.session_state.nutrition_data['food_intake_start_date'] = dates[0]
-                
+                st.session_state.nutrition_data = response.data[0]
             else:
                 st.session_state.nutrition_data = {}
-        except Exception as e:
-            st.warning(f"기존 데이터 불러오기 실패: {str(e)}")
+        except:
             st.session_state.nutrition_data = {}
     
-    # 페이지 진행 표시
+    # 페이지 진행 표시 (2페이지에서 4페이지로 증가)
     total_pages = 4
     st.progress(st.session_state.nutrition_page / total_pages)
     st.caption(f"페이지 {st.session_state.nutrition_page} / {total_pages}")
@@ -61,11 +29,11 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     if st.session_state.nutrition_page == 1:
         show_page1()
     elif st.session_state.nutrition_page == 2:
-        show_page2()
+        show_page2_meal_portions()  # 새로 추가: 5일 식사량 조사
     elif st.session_state.nutrition_page == 3:
-        show_page3()
+        show_page3_plate_waste()  # 새로 추가: 5일 잔반량 조사
     elif st.session_state.nutrition_page == 4:
-        show_page4(supabase, elderly_id, surveyor_id, nursing_home_id)
+        show_page4(supabase, elderly_id, surveyor_id, nursing_home_id)  # MNA-SF 및 제출
 
 def show_page1():
     """1페이지: 신체 활동 수준 조사 (IPAQ-SF)"""
@@ -196,584 +164,447 @@ def show_page1():
     
     navigation_buttons()
 
-def show_page2():
-    """2페이지: 1인 분량 음식 질량 조사(5일)"""
-    st.subheader("📏 1인 분량 음식 질량 조사 (5일)")
+def show_page2_meal_portions():
+    """2페이지: 1인 분량 음식 질량 조사 (5일)"""
+    st.subheader("1인 분량 음식 질량 조사 (5일)")
     
-    st.info("📝 5일간의 식사별 음식 중량을 그램(g) 단위로 기록해주세요.")
+    st.info("📝 5일간 제공된 음식의 질량을 측정하여 기록해주세요. (단위: g)")
     
     data = st.session_state.nutrition_data
     
-    # 5일간의 날짜 생성
-    if 'food_intake_start_date' not in data:
-        start_date = datetime.now()
-    else:
-        start_date = datetime.fromisoformat(data['food_intake_start_date'])
+    # 기존 데이터 불러오기
+    existing_portions = data.get('meal_portions', {})
+    if isinstance(existing_portions, str):
+        existing_portions = json.loads(existing_portions) if existing_portions else {}
     
-    # 시작 날짜 선택
-    selected_start_date = st.date_input(
-        "조사 시작 날짜",
-        value=start_date.date(),
-        key="food_intake_start_date"
-    )
+    meal_portions = {}
     
-    # 식사 유형 정의
-    meal_types = {
-        "조식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        },
-        "중식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        },
-        "석식": {
-            "일반식": ["밥", "국/탕", "주찬", "부찬1", "부찬2", "김치"],
-            "죽식": ["죽"],
-            "간식": ["간식1", "간식2"]
-        }
-    }
+    # 5일간 조사
+    for day in range(1, 6):
+        st.markdown(f"### 📅 {day}일차")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.write("**아침**")
+            breakfast_rice = st.number_input(
+                "밥 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_rice', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_rice"
+            )
+            breakfast_soup = st.number_input(
+                "국 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_soup', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_soup"
+            )
+            breakfast_main = st.number_input(
+                "주찬 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_main', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_main"
+            )
+            breakfast_side1 = st.number_input(
+                "부찬1 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_side1', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_side1"
+            )
+            breakfast_side2 = st.number_input(
+                "부찬2 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_side2', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_side2"
+            )
+            breakfast_kimchi = st.number_input(
+                "김치 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_breakfast_kimchi', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_kimchi"
+            )
+        
+        with col2:
+            st.write("**점심**")
+            lunch_rice = st.number_input(
+                "밥 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_rice', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_rice"
+            )
+            lunch_soup = st.number_input(
+                "국 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_soup', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_soup"
+            )
+            lunch_main = st.number_input(
+                "주찬 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_main', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_main"
+            )
+            lunch_side1 = st.number_input(
+                "부찬1 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_side1', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_side1"
+            )
+            lunch_side2 = st.number_input(
+                "부찬2 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_side2', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_side2"
+            )
+            lunch_kimchi = st.number_input(
+                "김치 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_lunch_kimchi', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_kimchi"
+            )
+        
+        with col3:
+            st.write("**저녁**")
+            dinner_rice = st.number_input(
+                "밥 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_rice', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_rice"
+            )
+            dinner_soup = st.number_input(
+                "국 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_soup', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_soup"
+            )
+            dinner_main = st.number_input(
+                "주찬 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_main', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_main"
+            )
+            dinner_side1 = st.number_input(
+                "부찬1 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_side1', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_side1"
+            )
+            dinner_side2 = st.number_input(
+                "부찬2 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_side2', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_side2"
+            )
+            dinner_kimchi = st.number_input(
+                "김치 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_dinner_kimchi', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_kimchi"
+            )
+        
+        # 데이터 저장
+        meal_portions.update({
+            f'day{day}_breakfast_rice': breakfast_rice,
+            f'day{day}_breakfast_soup': breakfast_soup,
+            f'day{day}_breakfast_main': breakfast_main,
+            f'day{day}_breakfast_side1': breakfast_side1,
+            f'day{day}_breakfast_side2': breakfast_side2,
+            f'day{day}_breakfast_kimchi': breakfast_kimchi,
+            f'day{day}_lunch_rice': lunch_rice,
+            f'day{day}_lunch_soup': lunch_soup,
+            f'day{day}_lunch_main': lunch_main,
+            f'day{day}_lunch_side1': lunch_side1,
+            f'day{day}_lunch_side2': lunch_side2,
+            f'day{day}_lunch_kimchi': lunch_kimchi,
+            f'day{day}_dinner_rice': dinner_rice,
+            f'day{day}_dinner_soup': dinner_soup,
+            f'day{day}_dinner_main': dinner_main,
+            f'day{day}_dinner_side1': dinner_side1,
+            f'day{day}_dinner_side2': dinner_side2,
+            f'day{day}_dinner_kimchi': dinner_kimchi
+        })
+        
+        # 일일 총량 표시
+        daily_total = (
+            breakfast_rice + breakfast_soup + breakfast_main + breakfast_side1 + breakfast_side2 + breakfast_kimchi +
+            lunch_rice + lunch_soup + lunch_main + lunch_side1 + lunch_side2 + lunch_kimchi +
+            dinner_rice + dinner_soup + dinner_main + dinner_side1 + dinner_side2 + dinner_kimchi
+        )
+        st.metric(f"{day}일차 총 제공량", f"{daily_total:.0f}g")
+        
+        st.markdown("---")
     
-    # 식품 섭취 데이터 초기화
-    if 'food_intake_data' not in data:
-        data['food_intake_data'] = {}
-    
-    # 5일간 데이터 입력
-    for day in range(5):
-        current_date = selected_start_date + timedelta(days=day)
-        date_str = current_date.strftime("%Y-%m-%d")
-        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
-        
-        st.markdown(f"---")
-        st.markdown(f"### 📅 {current_date.strftime('%m/%d')}({day_name})")
-        
-        if date_str not in data['food_intake_data']:
-            data['food_intake_data'][date_str] = {}
-        
-        # 각 식사 시간대별 입력
-        tabs = st.tabs(["🌅 조식", "☀️ 중식", "🌙 석식"])
-        
-        for tab_idx, (meal_name, tab) in enumerate(zip(["조식", "중식", "석식"], tabs)):
-            with tab:
-                if meal_name not in data['food_intake_data'][date_str]:
-                    data['food_intake_data'][date_str][meal_name] = {}
-                
-                meal_data = data['food_intake_data'][date_str][meal_name]
-                
-                # 식사 유형 선택
-                meal_type = st.radio(
-                    "식사 유형",
-                    options=["일반식", "죽식"],
-                    key=f"meal_type_{date_str}_{meal_name}",
-                    horizontal=True,
-                    index=0 if meal_data.get('meal_type', '일반식') == '일반식' else 1
-                )
-                
-                meal_data['meal_type'] = meal_type
-                
-                # 일반식 입력
-                if meal_type == "일반식":
-                    st.markdown("**일반식**")
-                    cols = st.columns(3)
-                    for idx, item in enumerate(meal_types[meal_name]["일반식"]):
-                        with cols[idx % 3]:
-                            value = st.number_input(
-                                f"{item} (g)",
-                                min_value=0,
-                                max_value=2000,
-                                value=int(meal_data.get(item, 0)) if meal_data.get(item) else 0,
-                                step=10,
-                                key=f"intake_{date_str}_{meal_name}_{item}"
-                            )
-                            meal_data[item] = value
-                
-                # 죽식 입력
-                else:
-                    st.markdown("**죽식**")
-                    value = st.number_input(
-                        "죽 (g)",
-                        min_value=0,
-                        max_value=2000,
-                        value=int(meal_data.get('죽', 0)) if meal_data.get('죽') else 0,
-                        step=10,
-                        key=f"intake_{date_str}_{meal_name}_죽"
-                    )
-                    meal_data['죽'] = value
-                
-                # 간식 입력
-                st.markdown("**간식**")
-                cols = st.columns(2)
-                for idx, item in enumerate(meal_types[meal_name]["간식"]):
-                    with cols[idx]:
-                        value = st.number_input(
-                            f"{item} (g)",
-                            min_value=0,
-                            max_value=1000,
-                            value=int(meal_data.get(item, 0)) if meal_data.get(item) else 0,
-                            step=10,
-                            key=f"intake_{date_str}_{meal_name}_{item}"
-                        )
-                        meal_data[item] = value
+    # 5일 총량 계산
+    total_portions = sum(meal_portions.values())
+    st.subheader("📊 5일간 총 제공량")
+    st.metric("총계", f"{total_portions:.0f}g", 
+             delta=f"1일 평균 {total_portions/5:.0f}g")
     
     # 데이터 저장
-    st.session_state.nutrition_data['food_intake_start_date'] = selected_start_date.isoformat()
-    st.session_state.nutrition_data['food_intake_data'] = data['food_intake_data']
-    
-    # 일일 총 섭취량 요약
-    st.markdown("---")
-    st.subheader("📊 5일간 총 섭취량 요약")
-    
-    summary_data = []
-    for day in range(5):
-        current_date = selected_start_date + timedelta(days=day)
-        date_str = current_date.strftime("%Y-%m-%d")
-        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
-        
-        daily_total = 0
-        if date_str in data['food_intake_data']:
-            for meal_name in ["조식", "중식", "석식"]:
-                if meal_name in data['food_intake_data'][date_str]:
-                    meal_data = data['food_intake_data'][date_str][meal_name]
-                    for key, value in meal_data.items():
-                        if key != 'meal_type' and isinstance(value, (int, float)):
-                            daily_total += value
-        
-        summary_data.append({
-            "날짜": f"{current_date.strftime('%m/%d')}({day_name})",
-            "총 섭취량": f"{daily_total}g"
-        })
-    
-    cols = st.columns(5)
-    for idx, day_data in enumerate(summary_data):
-        with cols[idx]:
-            st.metric(day_data["날짜"], day_data["총 섭취량"])
+    st.session_state.nutrition_data['meal_portions'] = json.dumps(meal_portions, ensure_ascii=False)
     
     navigation_buttons()
 
-def show_page3():
-    """3페이지: 잔반량 조사(5일)"""
-    st.subheader("🗑️ 잔반량 조사 (5일)")
+def show_page3_plate_waste():
+    """3페이지: 잔반량 조사 (5일)"""
+    st.subheader("잔반량 조사 (5일)")
     
-    st.info("📝 5일간의 식사별 품목별 잔반량을 선택해주세요.")
+    st.info("📝 5일간 남긴 음식의 질량을 측정하여 기록해주세요. (단위: g)")
     
     data = st.session_state.nutrition_data
     
-    # 식품 섭취 조사에서 설정한 날짜 사용
-    if 'food_intake_start_date' not in data:
-        start_date = datetime.now()
-        st.warning("⚠️ 먼저 '1인 분량 음식 질량 조사' 페이지에서 조사 날짜를 설정해주세요.")
-    else:
-        start_date = datetime.fromisoformat(data['food_intake_start_date'])
+    # 기존 데이터 불러오기
+    existing_waste = data.get('plate_waste', {})
+    if isinstance(existing_waste, str):
+        existing_waste = json.loads(existing_waste) if existing_waste else {}
     
-    selected_start_date = start_date.date() if isinstance(start_date, datetime) else start_date
+    plate_waste = {}
     
-    st.info(f"📅 조사 기간: {selected_start_date.strftime('%Y년 %m월 %d일')}부터 5일간")
-    
-    # 잔반량 데이터 초기화
-    if 'leftover_data' not in data:
-        data['leftover_data'] = {}
-    
-    # 잔반량 옵션 정의
-    leftover_options = [
-        {"label": "다 먹음", "ratio": 0.0, "color": "#2E5266"},
-        {"label": "조금 남김", "ratio": 0.25, "color": "#2E5266"},
-        {"label": "반 정도 남김", "ratio": 0.5, "color": "#2E5266"},
-        {"label": "대부분 남김", "ratio": 0.75, "color": "#2E5266"},
-        {"label": "모두 남김", "ratio": 1.0, "color": "#2E5266"}
-    ]
-    
-    def create_pie_chart_svg(ratio, color, size=60, is_selected=False):
-        """원형 차트 SVG 생성"""
-        import math
+    # 5일간 조사
+    for day in range(1, 6):
+        st.markdown(f"### 📅 {day}일차")
         
-        border_color = "#FF6B6B" if is_selected else "#CCCCCC"
-        border_width = 3 if is_selected else 2
-        radius = (size / 2) - 3
-        center = size / 2
+        col1, col2, col3 = st.columns(3)
         
-        if ratio == 0:
-            # 다 먹음 - 빈 원 (점선)
-            svg = f'''<svg width="{size}" height="{size}" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="{center}" cy="{center}" r="{radius}" 
-                        fill="white" 
-                        stroke="{border_color}" 
-                        stroke-width="{border_width}" 
-                        stroke-dasharray="4,4"/>
-            </svg>'''
-            
-        elif ratio == 1.0:
-            # 모두 남김 - 완전히 채워진 원
-            svg = f'''<svg width="{size}" height="{size}" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="{center}" cy="{center}" r="{radius}" 
-                        fill="{color}" 
-                        stroke="{border_color}" 
-                        stroke-width="{border_width}"/>
-            </svg>'''
-            
-        else:
-            # 부분 채움 - 파이 차트
-            angle = ratio * 360
-            large_arc = 1 if angle > 180 else 0
-            
-            # 각도를 라디안으로 변환 (12시 방향부터 시작)
-            end_angle_rad = math.radians(angle - 90)
-            end_x = center + radius * math.cos(end_angle_rad)
-            end_y = center + radius * math.sin(end_angle_rad)
-            
-            svg = f'''<svg width="{size}" height="{size}" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="{center}" cy="{center}" r="{radius}" 
-                        fill="white" 
-                        stroke="{border_color}" 
-                        stroke-width="{border_width}"/>
-                <path d="M {center} {center} L {center} 3 A {radius} {radius} 0 {large_arc} 1 {end_x:.2f} {end_y:.2f} Z" 
-                      fill="{color}" 
-                      stroke="{border_color}" 
-                      stroke-width="{border_width}"/>
-            </svg>'''
+        with col1:
+            st.write("**아침 잔반**")
+            breakfast_rice_waste = st.number_input(
+                "밥 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_rice_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_rice_waste"
+            )
+            breakfast_soup_waste = st.number_input(
+                "국 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_soup_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_soup_waste"
+            )
+            breakfast_main_waste = st.number_input(
+                "주찬 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_main_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_main_waste"
+            )
+            breakfast_side1_waste = st.number_input(
+                "부찬1 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_side1_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_side1_waste"
+            )
+            breakfast_side2_waste = st.number_input(
+                "부찬2 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_side2_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_side2_waste"
+            )
+            breakfast_kimchi_waste = st.number_input(
+                "김치 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_breakfast_kimchi_waste', 0)),
+                step=1.0,
+                key=f"day{day}_breakfast_kimchi_waste"
+            )
         
-        return svg
-    
-    # CSS 스타일
-    st.markdown("""
-    <style>
-    .leftover-option-box {
-        text-align: center;
-        padding: 8px;
-        border-radius: 8px;
-        border: 2px solid #e0e0e0;
-        cursor: pointer;
-        transition: all 0.2s;
-        background-color: white;
-        margin: 3px;
-    }
-    .leftover-option-box:hover {
-        border-color: #FF6B6B;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .leftover-option-selected {
-        border-color: #FF6B6B !important;
-        background-color: #FFF5F5 !important;
-        box-shadow: 0 2px 8px rgba(255,107,107,0.3) !important;
-    }
-    .leftover-label {
-        font-size: 11px;
-        font-weight: 600;
-        color: #333;
-        margin-top: 5px;
-    }
-    .meal-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 10px 15px;
-        border-radius: 8px;
-        margin: 10px 0 15px 0;
-        font-size: 16px;
-        font-weight: bold;
-    }
-    .food-item-header {
-        background-color: #f8f9fa;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-weight: bold;
-        color: #495057;
-        margin: 10px 0 8px 0;
-        border-left: 4px solid #667eea;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # 식사 품목 정의
-    meal_items = {
-        "조식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
-        "중식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치", "간식1", "간식2"],
-        "석식": ["밥", "죽", "국/탕", "주찬", "부찬1", "부찬2", "김치"]
-    }
-    
-    # 5일간 데이터 입력
-    for day in range(5):
-        current_date = selected_start_date + timedelta(days=day)
-        date_str = current_date.strftime("%Y-%m-%d")
-        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
+        with col2:
+            st.write("**점심 잔반**")
+            lunch_rice_waste = st.number_input(
+                "밥 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_rice_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_rice_waste"
+            )
+            lunch_soup_waste = st.number_input(
+                "국 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_soup_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_soup_waste"
+            )
+            lunch_main_waste = st.number_input(
+                "주찬 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_main_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_main_waste"
+            )
+            lunch_side1_waste = st.number_input(
+                "부찬1 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_side1_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_side1_waste"
+            )
+            lunch_side2_waste = st.number_input(
+                "부찬2 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_side2_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_side2_waste"
+            )
+            lunch_kimchi_waste = st.number_input(
+                "김치 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0)),
+                step=1.0,
+                key=f"day{day}_lunch_kimchi_waste"
+            )
+        
+        with col3:
+            st.write("**저녁 잔반**")
+            dinner_rice_waste = st.number_input(
+                "밥 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_rice_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_rice_waste"
+            )
+            dinner_soup_waste = st.number_input(
+                "국 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_soup_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_soup_waste"
+            )
+            dinner_main_waste = st.number_input(
+                "주찬 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_main_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_main_waste"
+            )
+            dinner_side1_waste = st.number_input(
+                "부찬1 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_side1_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_side1_waste"
+            )
+            dinner_side2_waste = st.number_input(
+                "부찬2 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_side2_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_side2_waste"
+            )
+            dinner_kimchi_waste = st.number_input(
+                "김치 잔반 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_waste.get(f'day{day}_dinner_kimchi_waste', 0)),
+                step=1.0,
+                key=f"day{day}_dinner_kimchi_waste"
+            )
+        
+        # 데이터 저장
+        plate_waste.update({
+            f'day{day}_breakfast_rice_waste': breakfast_rice_waste,
+            f'day{day}_breakfast_soup_waste': breakfast_soup_waste,
+            f'day{day}_breakfast_main_waste': breakfast_main_waste,
+            f'day{day}_breakfast_side1_waste': breakfast_side1_waste,
+            f'day{day}_breakfast_side2_waste': breakfast_side2_waste,
+            f'day{day}_breakfast_kimchi_waste': breakfast_kimchi_waste,
+            f'day{day}_lunch_rice_waste': lunch_rice_waste,
+            f'day{day}_lunch_soup_waste': lunch_soup_waste,
+            f'day{day}_lunch_main_waste': lunch_main_waste,
+            f'day{day}_lunch_side1_waste': lunch_side1_waste,
+            f'day{day}_lunch_side2_waste': lunch_side2_waste,
+            f'day{day}_lunch_kimchi_waste': lunch_kimchi_waste,
+            f'day{day}_dinner_rice_waste': dinner_rice_waste,
+            f'day{day}_dinner_soup_waste': dinner_soup_waste,
+            f'day{day}_dinner_main_waste': dinner_main_waste,
+            f'day{day}_dinner_side1_waste': dinner_side1_waste,
+            f'day{day}_dinner_side2_waste': dinner_side2_waste,
+            f'day{day}_dinner_kimchi_waste': dinner_kimchi_waste
+        })
+        
+        # 일일 총 잔반량 표시
+        daily_waste = (
+            breakfast_rice_waste + breakfast_soup_waste + breakfast_main_waste + breakfast_side1_waste + breakfast_side2_waste + breakfast_kimchi_waste +
+            lunch_rice_waste + lunch_soup_waste + lunch_main_waste + lunch_side1_waste + lunch_side2_waste + lunch_kimchi_waste +
+            dinner_rice_waste + dinner_soup_waste + dinner_main_waste + dinner_side1_waste + dinner_side2_waste + dinner_kimchi_waste
+        )
+        st.metric(f"{day}일차 총 잔반량", f"{daily_waste:.0f}g")
         
         st.markdown("---")
-        st.markdown(f"### 📅 {current_date.strftime('%m/%d')}({day_name})")
-        
-        if date_str not in data['leftover_data']:
-            data['leftover_data'][date_str] = {}
-        
-        # 섭취량 데이터 참조
-        intake_data_for_date = data.get('food_intake_data', {}).get(date_str, {})
-        
-        # 각 식사 시간대별 입력
-        meal_info = [
-            ("조식", "🌅"),
-            ("중식", "☀️"),
-            ("석식", "🌙")
-        ]
-        
-        for meal_name, meal_icon in meal_info:
-            if meal_name not in data['leftover_data'][date_str]:
-                data['leftover_data'][date_str][meal_name] = {}
-            
-            leftover_meal_data = data['leftover_data'][date_str][meal_name]
-            intake_meal_data = intake_data_for_date.get(meal_name, {})
-            
-            # 식사 유형 확인 (일반식 vs 죽식)
-            meal_type = intake_meal_data.get('meal_type', '일반식')
-            
-            # 식사 헤더
-            st.markdown(f'<div class="meal-header">{meal_icon} {meal_name} - {meal_type}</div>', unsafe_allow_html=True)
-            
-            # 품목 목록 가져오기
-            available_items = meal_items.get(meal_name, [])
-            
-            meal_total_provided = 0
-            meal_total_intake = 0
-            meal_total_leftover = 0
-            
-            for food_item in available_items:
-                # 제공량 확인
-                provided_amount = intake_meal_data.get(food_item, 0)
-                
-                # 제공량이 0이거나 None이면 건너뛰기
-                if not provided_amount or provided_amount == 0:
-                    continue
-                
-                # 품목 헤더
-                st.markdown(f'<div class="food-item-header">🍽️ {food_item} (제공: {provided_amount}g)</div>', 
-                           unsafe_allow_html=True)
-                
-                # 품목별 잔반량 데이터 초기화 (딕셔너리 타입 확인)
-                if food_item not in leftover_meal_data or not isinstance(leftover_meal_data.get(food_item), dict):
-                    leftover_meal_data[food_item] = {
-                        'leftover_option': '다 먹음',
-                        'leftover_ratio': 0.0
-                    }
-                
-                food_leftover_data = leftover_meal_data[food_item]
-                current_selection = food_leftover_data.get('leftover_option', '다 먹음')
-                
-                # 5개 옵션을 한 줄에 배치
-                cols = st.columns(5)
-                
-                for idx, option_data in enumerate(leftover_options):
-                    with cols[idx]:
-                        option_label = option_data['label']
-                        option_ratio = option_data['ratio']
-                        option_color = option_data['color']
-                        
-                        is_selected = (current_selection == option_label)
-                        
-                        # 원형 차트 SVG
-                        svg_chart = create_pie_chart_svg(
-                            option_ratio, 
-                            option_color, 
-                            size=60, 
-                            is_selected=is_selected
-                        )
-                        
-                        # 컨테이너 클래스
-                        container_class = "leftover-option-selected" if is_selected else ""
-                        
-                        st.markdown(f'''
-                        <div class="leftover-option-box {container_class}">
-                            {svg_chart}
-                            <div class="leftover-label">{option_label}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                        
-                        # 선택 버튼
-                        button_label = "✓" if is_selected else "선택"
-                        if st.button(
-                            button_label,
-                            key=f"leftover_{date_str}_{meal_name}_{food_item}_{option_label}",
-                            use_container_width=True,
-                            type="primary" if is_selected else "secondary"
-                        ):
-                            leftover_meal_data[food_item] = {
-                                'leftover_option': option_label,
-                                'leftover_ratio': option_ratio
-                            }
-                            st.rerun()
-                
-                # 품목별 계산
-                leftover_ratio = food_leftover_data.get('leftover_ratio', 0)
-                actual_intake = provided_amount * (1 - leftover_ratio)
-                leftover_amount = provided_amount * leftover_ratio
-                
-                meal_total_provided += provided_amount
-                meal_total_intake += actual_intake
-                meal_total_leftover += leftover_amount
-                
-                # 품목별 결과 표시
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.caption(f"선택: **{current_selection}**")
-                with col2:
-                    st.caption(f"제공: {provided_amount:.0f}g")
-                with col3:
-                    st.caption(f"섭취: {actual_intake:.0f}g")
-                with col4:
-                    st.caption(f"잔반: {leftover_amount:.0f}g")
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-            
-            # 식사별 합계
-            if meal_total_provided > 0:
-                intake_percentage = (meal_total_intake / meal_total_provided * 100)
-                
-                st.markdown("#### 📊 식사 합계")
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("총 제공량", f"{meal_total_provided:.0f}g")
-                with col2:
-                    st.metric("실제 섭취", f"{meal_total_intake:.0f}g")
-                with col3:
-                    st.metric("총 잔반", f"{meal_total_leftover:.0f}g")
-                with col4:
-                    st.metric("섭취율", f"{intake_percentage:.1f}%")
-            
-            st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # 5일 총 잔반량 계산
+    total_waste = sum(plate_waste.values())
+    st.subheader("📊 5일간 총 잔반량")
+    st.metric("총계", f"{total_waste:.0f}g", 
+             delta=f"1일 평균 {total_waste/5:.0f}g")
+    
+    # 섭취율 계산 (제공량 대비)
+    meal_portions_data = st.session_state.nutrition_data.get('meal_portions', {})
+    if isinstance(meal_portions_data, str):
+        meal_portions_data = json.loads(meal_portions_data) if meal_portions_data else {}
+    
+    if meal_portions_data:
+        total_portions = sum(meal_portions_data.values())
+        intake_rate = ((total_portions - total_waste) / total_portions * 100) if total_portions > 0 else 0
+        st.metric("평균 섭취율", f"{intake_rate:.1f}%")
     
     # 데이터 저장
-    st.session_state.nutrition_data['leftover_data'] = data['leftover_data']
-    
-    # 5일간 섭취율 요약
-    st.markdown("---")
-    st.subheader("📊 5일간 섭취율 요약")
-    
-    summary_data = []
-    for day in range(5):
-        current_date = selected_start_date + timedelta(days=day)
-        date_str = current_date.strftime("%Y-%m-%d")
-        day_name = ["월", "화", "수", "목", "금", "토", "일"][current_date.weekday()]
-        
-        daily_provided = 0
-        daily_actual_intake = 0
-        
-        # 제공량 및 섭취량 계산
-        if date_str in data.get('food_intake_data', {}):
-            for meal_name in ["조식", "중식", "석식"]:
-                if meal_name in data['food_intake_data'][date_str]:
-                    intake_meal = data['food_intake_data'][date_str][meal_name]
-                    leftover_meal = data.get('leftover_data', {}).get(date_str, {}).get(meal_name, {})
-                    
-                    for food_item, provided_amount in intake_meal.items():
-                        if food_item != 'meal_type' and isinstance(provided_amount, (int, float)) and provided_amount > 0:
-                            daily_provided += provided_amount
-                            
-                            # 잔반 데이터 확인
-                            if food_item in leftover_meal and isinstance(leftover_meal[food_item], dict):
-                                leftover_ratio = leftover_meal[food_item].get('leftover_ratio', 0)
-                                daily_actual_intake += provided_amount * (1 - leftover_ratio)
-                            else:
-                                # 잔반 데이터가 없으면 전부 섭취한 것으로 간주
-                                daily_actual_intake += provided_amount
-        
-        intake_rate = (daily_actual_intake / daily_provided * 100) if daily_provided > 0 else 0
-        
-        summary_data.append({
-            "날짜": f"{current_date.strftime('%m/%d')}({day_name})",
-            "제공량": daily_provided,
-            "실제섭취": daily_actual_intake,
-            "섭취율": intake_rate
-        })
-    
-    # 요약 카드
-    cols = st.columns(5)
-    for idx, day_data in enumerate(summary_data):
-        with cols[idx]:
-            # 섭취율에 따른 색상
-            if day_data['섭취율'] >= 80:
-                bg_color = "#E8F5E9"
-                text_color = "#2E7D32"
-            elif day_data['섭취율'] >= 60:
-                bg_color = "#FFF3E0"
-                text_color = "#F57C00"
-            else:
-                bg_color = "#FFEBEE"
-                text_color = "#C62828"
-            
-            st.markdown(f'''
-            <div style="text-align: center; padding: 15px; background-color: {bg_color}; 
-                        border-radius: 10px; border: 2px solid {text_color};">
-                <div style="font-weight: bold; margin-bottom: 10px; color: #333;">{day_data['날짜']}</div>
-                <div style="font-size: 28px; color: {text_color}; font-weight: bold; margin: 10px 0;">
-                    {day_data['섭취율']:.1f}%
-                </div>
-                <div style="color: #666; font-size: 12px; margin-top: 8px;">
-                    제공: {day_data['제공량']:.0f}g<br>
-                    섭취: {day_data['실제섭취']:.0f}g
-                </div>
-            </div>
-            ''', unsafe_allow_html=True)
-    
-    # 5일 평균
-    avg_intake_rate = sum(d['섭취율'] for d in summary_data) / len(summary_data) if summary_data else 0
-    total_provided = sum(d['제공량'] for d in summary_data)
-    total_intake = sum(d['실제섭취'] for d in summary_data)
-    total_leftover = total_provided - total_intake
-    
-    st.markdown("---")
-    st.markdown("### 📈 5일간 종합 분석")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("총 제공량", f"{total_provided:.0f}g")
-    with col2:
-        st.metric("총 섭취량", f"{total_intake:.0f}g")
-    with col3:
-        st.metric("총 잔반량", f"{total_leftover:.0f}g")
-    with col4:
-        st.metric("평균 섭취율", f"{avg_intake_rate:.1f}%")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # 평가
-    if avg_intake_rate >= 80:
-        st.success("✅ **양호한 섭취율입니다.** 영양 상태가 우수합니다.")
-    elif avg_intake_rate >= 60:
-        st.warning("⚠️ **섭취율이 다소 낮습니다.** 식사 환경 및 메뉴 개선이 필요합니다.")
-    else:
-        st.error("🚨 **섭취율이 매우 낮습니다.** 즉시 영양 상담 및 개입이 필요합니다.")
-    
-    # 품목별 잔반율 분석
-    st.markdown("---")
-    st.markdown("### 🔍 품목별 잔반 경향 분석")
-    
-    item_stats = {}
-    for day in range(5):
-        current_date = selected_start_date + timedelta(days=day)
-        date_str = current_date.strftime("%Y-%m-%d")
-        
-        if date_str in data.get('leftover_data', {}):
-            for meal_name in ["조식", "중식", "석식"]:
-                if meal_name in data['leftover_data'][date_str]:
-                    leftover_meal = data['leftover_data'][date_str][meal_name]
-                    
-                    for food_item, leftover_info in leftover_meal.items():
-                        if isinstance(leftover_info, dict):
-                            leftover_ratio = leftover_info.get('leftover_ratio', 0)
-                            
-                            if food_item not in item_stats:
-                                item_stats[food_item] = []
-                            item_stats[food_item].append(leftover_ratio)
-    
-    if item_stats:
-        # 평균 잔반율이 높은 순으로 정렬
-        sorted_items = sorted(item_stats.items(), key=lambda x: sum(x[1])/len(x[1]), reverse=True)
-        
-        st.markdown("**잔반율이 높은 품목 TOP 5**")
-        for idx, (item, ratios) in enumerate(sorted_items[:5]):
-            avg_leftover = sum(ratios) / len(ratios) * 100
-            if avg_leftover > 0:
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.progress(avg_leftover / 100, text=f"{idx+1}. {item}")
-                with col2:
-                    st.caption(f"{avg_leftover:.1f}%")
+    st.session_state.nutrition_data['plate_waste'] = json.dumps(plate_waste, ensure_ascii=False)
     
     navigation_buttons()
 
@@ -968,85 +799,43 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     """설문 데이터 저장"""
     try:
         data = st.session_state.nutrition_data.copy()
-        
-        # 식품 섭취 및 잔반 데이터를 JSONB로 변환
-        meal_portions = data.get('food_intake_data', {})
-        plate_waste = data.get('leftover_data', {})
-        
-        # 기본 데이터 준비
-        survey_data = {
+        data.update({
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
-            'updated_at': datetime.now().isoformat(),
-            
-            # 5일간 식사 데이터 (JSONB)
-            'meal_portions': meal_portions,  # food_intake_data를 meal_portions로 저장
-            'plate_waste': plate_waste,      # leftover_data를 plate_waste로 저장
-            
-            # 신체 활동 데이터
-            'vigorous_activity_days': data.get('vigorous_activity_days', 0),
-            'vigorous_activity_time': data.get('vigorous_activity_time', 0),
-            'moderate_activity_days': data.get('moderate_activity_days', 0),
-            'moderate_activity_time': data.get('moderate_activity_time', 0),
-            'walking_days': data.get('walking_days', 0),
-            'walking_time': data.get('walking_time', 0),
-            'sitting_time': data.get('sitting_time', 0),
-            
-            # MNA-SF 데이터
-            'appetite_change': data.get('appetite_change', 2),
-            'weight_change': data.get('weight_change', 3),
-            'mobility': data.get('mobility', 2),
-            'stress_illness': data.get('stress_illness', 2),
-            'neuropsychological_problem': data.get('neuropsychological_problem', 2),
-            'bmi_category': data.get('bmi_category', 3)
-        }
+            'updated_at': datetime.now().isoformat()
+        })
         
         # 기존 데이터 확인
         response = supabase.table('nutrition_survey').select('id').eq('elderly_id', elderly_id).execute()
         
         if response.data:
             # 업데이트
-            supabase.table('nutrition_survey').update(survey_data).eq('elderly_id', elderly_id).execute()
-            st.success("✅ 영양 조사표가 업데이트되었습니다!")
+            supabase.table('nutrition_survey').update(data).eq('elderly_id', elderly_id).execute()
         else:
             # 새로 추가
-            supabase.table('nutrition_survey').insert(survey_data).execute()
-            st.success("✅ 영양 조사표가 저장되었습니다!")
+            supabase.table('nutrition_survey').insert(data).execute()
         
         # 진행 상황 업데이트
-        try:
-            supabase.table('survey_progress').update({
-                'nutrition_survey_completed': True,
-                'last_updated': datetime.now().isoformat()
-            }).eq('elderly_id', elderly_id).execute()
-        except Exception as e:
-            st.warning(f"진행 상황 업데이트 실패: {str(e)}")
+        supabase.table('survey_progress').update({
+            'nutrition_survey_completed': True,
+            'last_updated': datetime.now().isoformat()
+        }).eq('elderly_id', elderly_id).execute()
+        
+        st.success("✅ 영양 조사표가 저장되었습니다!")
         
         # 세션 초기화
-        if 'nutrition_data' in st.session_state:
-            del st.session_state.nutrition_data
-        if 'nutrition_page' in st.session_state:
-            del st.session_state.nutrition_page
+        del st.session_state.nutrition_data
+        del st.session_state.nutrition_page
         st.session_state.current_survey = None
+        
+        st.balloons()
         
         if st.button("대시보드로 돌아가기"):
             st.rerun()
         
     except Exception as e:
         st.error(f"저장 중 오류가 발생했습니다: {str(e)}")
-        
-        # 디버깅을 위한 정보 표시
-        with st.expander("🔍 상세 오류 정보"):
-            st.write("오류 메시지:", str(e))
-            st.write("저장하려던 데이터:")
-            st.json({
-                "meal_portions": "5일간 식사 데이터",
-                "plate_waste": "5일간 잔반 데이터",
-                "activity_data": "신체 활동 데이터",
-                "mna_data": "영양 상태 평가 데이터"
-            })
-
 
 def navigation_buttons():
     """페이지 이동 버튼"""
@@ -1069,7 +858,7 @@ def navigation_buttons():
             st.rerun()
     
     with col3:
-        if st.session_state.nutrition_page < 4:  # 총 4페이지
+        if st.session_state.nutrition_page < 4:
             if st.button("다음 ➡️", use_container_width=True, type="primary"):
                 st.session_state.nutrition_page += 1
                 st.rerun()
