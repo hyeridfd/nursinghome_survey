@@ -73,21 +73,21 @@ def create_visual_guide():
         <div class="visual-item">
             <svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
-                <path d="M 50 50 L 50 5 A 45 45 0 0 1 81.8 81.8 Z" fill="#2c3e50"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 0 1 95 50 Z" fill="#2c3e50"/>
             </svg>
             <div class="visual-label">1. 조금 남김<br/>(약 25%)</div>
         </div>
         <div class="visual-item">
             <svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
-                <path d="M 50 50 L 50 5 A 45 45 0 0 1 95 50 Z" fill="#2c3e50"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 0 1 50 95 Z" fill="#2c3e50"/>
             </svg>
             <div class="visual-label">2. 반 정도 남김<br/>(약 50%)</div>
         </div>
         <div class="visual-item">
             <svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
-                <path d="M 50 50 L 50 5 A 45 45 0 1 1 18.2 18.2 Z" fill="#2c3e50"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 1 1 5 50 Z" fill="#2c3e50"/>
             </svg>
             <div class="visual-label">3. 대부분 남김<br/>(약 75%)</div>
         </div>
@@ -110,20 +110,20 @@ def create_food_waste_selector(label, key, default_value=0):
         """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
             <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
         </svg>""",
-        # 1. 조금 남김 (25%)
-        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
-            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
-            <path d="M 50 50 L 50 5 A 45 45 0 0 1 81.8 81.8 Z" fill="#2c3e50"/>
-        </svg>""",
-        # 2. 반 정도 남김 (50%)
+        # 1. 조금 남김 (25%) - 1/4만 칠하기
         """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
             <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
             <path d="M 50 50 L 50 5 A 45 45 0 0 1 95 50 Z" fill="#2c3e50"/>
         </svg>""",
-        # 3. 대부분 남김 (75%)
+        # 2. 반 정도 남김 (50%) - 1/2만 칠하기
         """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
             <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
-            <path d="M 50 50 L 50 5 A 45 45 0 1 1 18.2 18.2 Z" fill="#2c3e50"/>
+            <path d="M 50 50 L 50 5 A 45 45 0 0 1 50 95 Z" fill="#2c3e50"/>
+        </svg>""",
+        # 3. 대부분 남김 (75%) - 3/4만 칠하기
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+            <path d="M 50 50 L 50 5 A 45 45 0 1 1 5 50 Z" fill="#2c3e50"/>
         </svg>""",
         # 4. 모두 남김 (100%)
         """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
