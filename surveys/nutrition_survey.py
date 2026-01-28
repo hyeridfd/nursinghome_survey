@@ -1,6 +1,13 @@
 import streamlit as st
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo('Asia/Seoul')
+
+def get_kst_now():
+    """현재 한국 시간 반환 (ISO 8601 형식)"""
+    return datetime.now(KST).isoformat(
 
 def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("🥗 2. 영양 조사표")
