@@ -20,8 +20,8 @@ def show_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         except:
             st.session_state.basic_data = {}
     
-    # 페이지 진행 표시
-    total_pages = 7  # 5페이지에서 7페이지로 증가
+    # 페이지 진행 표시 (7페이지에서 9페이지로 증가)
+    total_pages = 9
     st.progress(st.session_state.basic_page / total_pages)
     st.caption(f"페이지 {st.session_state.basic_page} / {total_pages}")
     
@@ -35,11 +35,15 @@ def show_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     elif st.session_state.basic_page == 4:
         show_page4()
     elif st.session_state.basic_page == 5:
-        show_page5_kmbi()  # K-MBI 평가
+        show_page5_ipaq()  # 신체 활동 수준 조사 (IPAQ-SF)
     elif st.session_state.basic_page == 6:
-        show_page6_mmse()  # MMSE-K 평가
+        show_page6_mna()  # 영양 상태 평가 (MNA-SF)
     elif st.session_state.basic_page == 7:
-        show_page7(supabase, elderly_id, surveyor_id, nursing_home_id)  # 시설 특성 및 제출
+        show_page7_kmbi()  # K-MBI 평가
+    elif st.session_state.basic_page == 8:
+        show_page8_mmse()  # MMSE-K 평가
+    elif st.session_state.basic_page == 9:
+        show_page9(supabase, elderly_id, surveyor_id, nursing_home_id)  # 시설 특성 및 제출
 
 def show_page1():
     """1페이지: 인구통계학적 특성"""
@@ -309,12 +313,300 @@ def show_page4():
     
     navigation_buttons()
 
-def show_page5_kmbi():
+def show_page5_ipaq():
+    """5페이지: 신체 활동 수준 조사 (IPAQ-SF)"""
+    st.subheader("신체 활동 수준 조사 (IPAQ-SF)")
+    
+    st.info("📝 지난 7일 동안의 신체 활동에 대해 응답해주세요.")
+    
+    data = st.session_state.basic_data
+    
+    st.markdown("### 1. 격렬한 신체 활동")
+    st.caption("예: 무거운 물건 들기, 땅 파기, 에어로빅, 빠른 자전거 타기 등")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        vigorous_days = st.number_input(
+            "지난 7일 동안 격렬한 신체 활동을 10분 이상 한 날은 며칠입니까?",
+            min_value=0,
+            max_value=7,
+            value=int(data.get('vigorous_activity_days', 0)) if data.get('vigorous_activity_days') else 0,
+            key="vigorous_days"
+        )
+    
+    with col2:
+        vigorous_time = st.number_input(
+            "그러한 날 중 하루에 보통 얼마나 많은 시간을 격렬한 신체 활동을 하는데 보냈습니까? (분)",
+            min_value=0,
+            max_value=1440,
+            value=int(data.get('vigorous_activity_time', 0)) if data.get('vigorous_activity_time') else 0,
+            key="vigorous_time"
+        )
+    
+    st.markdown("---")
+    st.markdown("### 2. 중간 정도의 신체 활동")
+    st.caption("예: 가벼운 물건 나르기, 보통 속도의 자전거 타기, 복식 테니스 등 (걷기는 제외)")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        moderate_days = st.number_input(
+            "지난 7일 동안 중간 정도의 신체 활동을 10분 이상 한 날은 며칠입니까?",
+            min_value=0,
+            max_value=7,
+            value=int(data.get('moderate_activity_days', 0)) if data.get('moderate_activity_days') else 0,
+            key="moderate_days"
+        )
+    
+    with col2:
+        moderate_time = st.number_input(
+            "그러한 날 중 하루에 보통 얼마나 많은 시간을 중간 정도의 신체 활동을 하는데 보냈습니까? (분)",
+            min_value=0,
+            max_value=1440,
+            value=int(data.get('moderate_activity_time', 0)) if data.get('moderate_activity_time') else 0,
+            key="moderate_time"
+        )
+    
+    st.markdown("---")
+    st.markdown("### 3. 걷기")
+    st.caption("직장에서, 집에서, 장소 간 이동, 여가 시간의 모든 걷기를 포함")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        walking_days = st.number_input(
+            "지난 7일 동안 10분 이상 걸은 날은 며칠입니까?",
+            min_value=0,
+            max_value=7,
+            value=int(data.get('walking_days', 0)) if data.get('walking_days') else 0,
+            key="walking_days"
+        )
+    
+    with col2:
+        walking_time = st.number_input(
+            "그러한 날 중 하루에 보통 얼마나 많은 시간을 걷는데 보냈습니까? (분)",
+            min_value=0,
+            max_value=1440,
+            value=int(data.get('walking_time', 0)) if data.get('walking_time') else 0,
+            key="walking_time"
+        )
+    
+    st.markdown("---")
+    st.markdown("### 4. 앉아서 보낸 시간")
+    
+    sitting_time = st.number_input(
+        "지난 7일 동안 평일 하루에 앉아서 보낸 시간은 얼마나 됩니까? (분)",
+        min_value=0,
+        max_value=1440,
+        value=int(data.get('sitting_time', 0)) if data.get('sitting_time') else 0,
+        key="sitting_time",
+        help="직장, 집, 학교에서 공부/독서, TV 시청, 친구 방문 등 앉아서 보낸 모든 시간 포함"
+    )
+    
+    # 데이터 저장
+    st.session_state.basic_data.update({
+        'vigorous_activity_days': vigorous_days,
+        'vigorous_activity_time': vigorous_time,
+        'moderate_activity_days': moderate_days,
+        'moderate_activity_time': moderate_time,
+        'walking_days': walking_days,
+        'walking_time': walking_time,
+        'sitting_time': sitting_time
+    })
+    
+    # 활동량 계산 및 표시
+    total_vigorous = vigorous_days * vigorous_time * 8.0  # MET
+    total_moderate = moderate_days * moderate_time * 4.0  # MET
+    total_walking = walking_days * walking_time * 3.3  # MET
+    total_met = total_vigorous + total_moderate + total_walking
+    
+    st.markdown("---")
+    st.subheader("📊 신체 활동량 요약")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("격렬한 활동", f"{total_vigorous:.0f} MET-분/주")
+    with col2:
+        st.metric("중간 활동", f"{total_moderate:.0f} MET-분/주")
+    with col3:
+        st.metric("걷기", f"{total_walking:.0f} MET-분/주")
+    with col4:
+        st.metric("총 활동량", f"{total_met:.0f} MET-분/주")
+    
+    # 활동 수준 분류
+    if total_met >= 3000 or (vigorous_days >= 3 and total_vigorous >= 1500):
+        activity_level = "높음 (High)"
+    elif total_met >= 600 or (vigorous_days >= 3) or (moderate_days + walking_days >= 5 and total_moderate + total_walking >= 600):
+        activity_level = "중간 (Moderate)"
+    else:
+        activity_level = "낮음 (Low)"
+    
+    st.info(f"💪 신체 활동 수준: **{activity_level}**")
+    
+    navigation_buttons()
+
+def show_page6_mna():
+    """6페이지: 영양 상태 평가 (MNA-SF)"""
+    st.subheader("영양 상태 평가 (MNA-SF)")
+    
+    st.info("📝 간이 영양 평가 (Mini Nutritional Assessment - Short Form)")
+    
+    data = st.session_state.basic_data
+    
+    # BMI 가져오기
+    height = data.get('height', 0)
+    weight = data.get('weight', 0)
+    if height and weight and height > 0:
+        bmi = weight / ((height / 100) ** 2)
+        st.info(f"📊 기초 조사표 기준 BMI: {bmi:.2f} kg/m²")
+    else:
+        bmi = None
+    
+    st.markdown("### 1. 식욕 감퇴")
+    appetite_change = st.radio(
+        "지난 3개월 동안 식욕부진, 소화 문제, 씹기 또는 삼키기 어려움 등으로 음식 섭취량이 감소했습니까?",
+        options=[
+            "0 = 심하게 감소",
+            "1 = 중등도로 감소",
+            "2 = 감소하지 않음"
+        ],
+        index=int(data.get('mna_appetite_change', 2)),
+        key="mna_appetite_change"
+    )
+    
+    st.markdown("### 2. 체중 감소")
+    weight_change = st.radio(
+        "지난 3개월 동안 체중 감소가 있었습니까?",
+        options=[
+            "0 = 3kg 이상 감소",
+            "1 = 모르겠다",
+            "2 = 1-3kg 감소",
+            "3 = 체중 감소 없음"
+        ],
+        index=int(data.get('mna_weight_change', 3)),
+        key="mna_weight_change"
+    )
+    
+    st.markdown("### 3. 거동")
+    mobility = st.radio(
+        "거동 능력은 어떻습니까?",
+        options=[
+            "0 = 침대나 의자에 묶여있음",
+            "1 = 침대나 의자를 벗어날 수 있으나 외출하지 못함",
+            "2 = 자유롭게 돌아다님"
+        ],
+        index=int(data.get('mna_mobility', 2)),
+        key="mna_mobility"
+    )
+    
+    st.markdown("### 4. 스트레스 또는 급성 질환")
+    stress_illness = st.radio(
+        "지난 3개월 동안 정신적 스트레스 또는 급성 질환을 겪었습니까?",
+        options=[
+            "0 = 예",
+            "2 = 아니오"
+        ],
+        index=0 if data.get('mna_stress_illness') == 0 else 1,
+        key="mna_stress_illness"
+    )
+    
+    st.markdown("### 5. 신경정신학적 문제")
+    neuropsychological = st.radio(
+        "신경정신학적 문제가 있습니까?",
+        options=[
+            "0 = 심한 치매 또는 우울증",
+            "1 = 경도 치매",
+            "2 = 정신적 문제 없음"
+        ],
+        index=int(data.get('mna_neuropsychological_problem', 2)),
+        key="mna_neuropsychological"
+    )
+    
+    st.markdown("### 6. 체질량지수 (BMI)")
+    
+    if bmi:
+        # BMI 자동 분류
+        if bmi < 19:
+            bmi_category_default = 0
+            bmi_text = f"0 = BMI가 19 미만 (현재: {bmi:.2f})"
+        elif bmi < 21:
+            bmi_category_default = 1
+            bmi_text = f"1 = BMI가 19 이상 21 미만 (현재: {bmi:.2f})"
+        elif bmi < 23:
+            bmi_category_default = 2
+            bmi_text = f"2 = BMI가 21 이상 23 미만 (현재: {bmi:.2f})"
+        else:
+            bmi_category_default = 3
+            bmi_text = f"3 = BMI가 23 이상 (현재: {bmi:.2f})"
+        
+        st.info(bmi_text)
+        bmi_category = bmi_category_default
+    else:
+        bmi_category = st.radio(
+            "BMI 분류",
+            options=[
+                "0 = BMI가 19 미만",
+                "1 = BMI가 19 이상 21 미만",
+                "2 = BMI가 21 이상 23 미만",
+                "3 = BMI가 23 이상"
+            ],
+            index=int(data.get('mna_bmi_category', 3)),
+            key="mna_bmi_category_manual"
+        )
+    
+    # 점수 계산
+    appetite_score = int(appetite_change.split('=')[0].strip())
+    weight_score = int(weight_change.split('=')[0].strip())
+    mobility_score = int(mobility.split('=')[0].strip())
+    stress_score = int(stress_illness.split('=')[0].strip())
+    neuro_score = int(neuropsychological.split('=')[0].strip())
+    bmi_score = bmi_category if isinstance(bmi_category, int) else int(bmi_category.split('=')[0].strip())
+    
+    total_score = appetite_score + weight_score + mobility_score + stress_score + neuro_score + bmi_score
+    
+    # 데이터 저장
+    st.session_state.basic_data.update({
+        'mna_appetite_change': appetite_score,
+        'mna_weight_change': weight_score,
+        'mna_mobility': mobility_score,
+        'mna_stress_illness': stress_score,
+        'mna_neuropsychological_problem': neuro_score,
+        'mna_bmi_category': bmi_score,
+        'mna_score': total_score
+    })
+    
+    st.markdown("---")
+    st.subheader("📊 MNA-SF 결과")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("총점", f"{total_score}점 / 14점")
+    
+    with col2:
+        if total_score >= 12:
+            status = "정상 영양 상태"
+            color = "green"
+        elif total_score >= 8:
+            status = "영양불량 위험"
+            color = "orange"
+        else:
+            status = "영양불량"
+            color = "red"
+        
+        st.markdown(f"### :{color}[{status}]")
+    
+    st.info("""
+    **해석 기준:**
+    - 12-14점: 정상 영양 상태
+    - 8-11점: 영양불량 위험
+    - 0-7점: 영양불량
+    """)
+    
+    navigation_buttons()
+
+def show_page7_kmbi():
     """
-    페이지 5: K-MBI (한국판 수정 바델 지수) 평가
+    페이지 7: K-MBI (한국판 수정 바델 지수) 평가
     5단계 간편 평가 방식
     """
-    st.header("📋 5. K-MBI (한국판 수정 바델 지수)")
+    st.header("📋 7. K-MBI (한국판 수정 바델 지수)")
     
     st.info("""
     **K-MBI 평가 안내**
@@ -452,12 +744,11 @@ def show_page5_kmbi():
     for level in kmbi_options[::-1]:  # 역순으로 표시 (독립 → 의존)
         if level in level_groups and level_groups[level]:
             st.markdown(f"{level_colors.get(level, '⚪')} **{level}**: {', '.join(level_groups[level])}")
+    
     navigation_buttons()
 
-
-
-def show_page6_mmse():
-    """6페이지: MMSE-K (간이정신상태검사 한국판) 평가"""
+def show_page8_mmse():
+    """8페이지: MMSE-K (간이정신상태검사 한국판) 평가"""
     st.subheader("MMSE-K (간이정신상태검사 한국판) 평가")
     
     st.info("📝 인지기능을 평가합니다. 각 문항에 정답이면 해당 점수를 부여합니다.")
@@ -578,9 +869,8 @@ def show_page6_mmse():
     
     navigation_buttons()
 
-
-def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
-    """7페이지: 시설 특성 및 제출"""
+def show_page9(supabase, elderly_id, surveyor_id, nursing_home_id):
+    """9페이지: 시설 특성 및 제출"""
     st.subheader("시설 특성")
     
     data = st.session_state.basic_data
@@ -625,7 +915,7 @@ def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
     # 평가 점수 요약
     st.subheader("📊 평가 점수 요약")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         kmbi_score = data.get('k_mbi_score', 0)
@@ -655,6 +945,17 @@ def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
         else:
             st.error("인지장애 의심")
     
+    with col3:
+        mna_score = data.get('mna_score', 0)
+        st.metric("MNA-SF", f"{mna_score}점 / 14점")
+        
+        if mna_score >= 12:
+            st.success("정상 영양 상태")
+        elif mna_score >= 8:
+            st.warning("영양불량 위험")
+        else:
+            st.error("영양불량")
+    
     st.markdown("---")
     
     # 제출 버튼
@@ -678,7 +979,7 @@ def show_page7(supabase, elderly_id, surveyor_id, nursing_home_id):
     with col3:
         if st.button("✅ 제출", use_container_width=True, type="primary"):
             # 필수 항목 검증
-            required_fields = ['gender', 'age', 'care_grade', 'k_mbi_score', 'mmse_score']
+            required_fields = ['gender', 'age', 'care_grade', 'k_mbi_score', 'mmse_score', 'mna_score']
             missing = [f for f in required_fields if not st.session_state.basic_data.get(f)]
             
             if missing:
@@ -714,7 +1015,15 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
                 'chewing_difficulty', 'swallowing_difficulty', 'food_preparation_method',
                 'eating_independence', 'meal_type', 'height', 'weight',
                 'waist_circumference', 'systolic_bp', 'diastolic_bp',
-                'facility_capacity', 'facility_location', 'nutritionist_present'
+                'facility_capacity', 'facility_location', 'nutritionist_present',
+                # IPAQ-SF 필드
+                'vigorous_activity_days', 'vigorous_activity_time',
+                'moderate_activity_days', 'moderate_activity_time',
+                'walking_days', 'walking_time', 'sitting_time',
+                # MNA-SF 필드
+                'mna_appetite_change', 'mna_weight_change', 'mna_mobility',
+                'mna_stress_illness', 'mna_neuropsychological_problem',
+                'mna_bmi_category', 'mna_score'
             }
         
         # === 2단계: 기본 필수 데이터 ===
@@ -746,7 +1055,23 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'facility_capacity': 'facility_capacity',
             'facility_location': 'facility_location',
             'nutritionist_present': 'nutritionist_present',
-            'medication_count': 'medication_count'
+            'medication_count': 'medication_count',
+            # IPAQ-SF 필드
+            'vigorous_activity_days': 'vigorous_activity_days',
+            'vigorous_activity_time': 'vigorous_activity_time',
+            'moderate_activity_days': 'moderate_activity_days',
+            'moderate_activity_time': 'moderate_activity_time',
+            'walking_days': 'walking_days',
+            'walking_time': 'walking_time',
+            'sitting_time': 'sitting_time',
+            # MNA-SF 필드
+            'mna_appetite_change': 'mna_appetite_change',
+            'mna_weight_change': 'mna_weight_change',
+            'mna_mobility': 'mna_mobility',
+            'mna_stress_illness': 'mna_stress_illness',
+            'mna_neuropsychological_problem': 'mna_neuropsychological_problem',
+            'mna_bmi_category': 'mna_bmi_category',
+            'mna_score': 'mna_score'
         }
         
         for field_key, column_name in field_mapping.items():
@@ -835,13 +1160,22 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
                           if k not in ['elderly_id', 'surveyor_id', 'nursing_home_id', 'updated_at']]
             st.write(f"총 {len(saved_fields)}개 항목 저장됨")
             
-            # K-MBI 점수 표시
-            if 'k_mbi_score' in survey_data:
-                st.metric("K-MBI 총점", f"{survey_data['k_mbi_score']}/100점")
+            col1, col2, col3 = st.columns(3)
             
-            # MMSE-K 점수 표시
-            if 'mmse_score' in survey_data:
-                st.metric("MMSE-K 총점", f"{survey_data['mmse_score']}/30점")
+            with col1:
+                # K-MBI 점수 표시
+                if 'k_mbi_score' in survey_data:
+                    st.metric("K-MBI 총점", f"{survey_data['k_mbi_score']}/100점")
+            
+            with col2:
+                # MMSE-K 점수 표시
+                if 'mmse_score' in survey_data:
+                    st.metric("MMSE-K 총점", f"{survey_data['mmse_score']}/30점")
+            
+            with col3:
+                # MNA-SF 점수 표시
+                if 'mna_score' in survey_data:
+                    st.metric("MNA-SF 총점", f"{survey_data['mna_score']}/14점")
         
         st.balloons()
         
@@ -894,7 +1228,7 @@ def navigation_buttons():
             st.rerun()
     
     with col3:
-        if st.session_state.basic_page < 7:
+        if st.session_state.basic_page < 9:
             if st.button("다음 ➡️", use_container_width=True, type="primary"):
                 st.session_state.basic_page += 1
                 st.rerun()
