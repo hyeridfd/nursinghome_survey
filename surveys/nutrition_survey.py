@@ -131,7 +131,7 @@ def create_food_waste_selector(label, key, default_value=0):
         </svg>"""
     ]
     
-    labels = ["0. 다 먹음", "1. 조금 남김", "2. 반 정도 남김", "3. 대부분 남김", "4. 모두 남김"]
+    labels = ["0. 다 먹음", "1. 조금", "2. 반", "3. 대부분", "4. 모두"]
     
     # 5개 컬럼으로 원형 이미지 배치
     cols = st.columns(5)
@@ -311,7 +311,7 @@ def show_page2_meal_portions():
     for day in range(1, 6):
         st.markdown(f"### 📅 {day}일차")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
             st.write("**아침**")
@@ -365,6 +365,17 @@ def show_page2_meal_portions():
             )
         
         with col2:
+            st.write("**간식1**")
+            snack1 = st.number_input(
+                "간식 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_snack1', 0)),
+                step=1.0,
+                key=f"day{day}_snack1"
+            )
+        
+        with col3:
             st.write("**점심**")
             lunch_rice = st.number_input(
                 "밥/죽 (g)",
@@ -415,7 +426,18 @@ def show_page2_meal_portions():
                 key=f"day{day}_lunch_kimchi"
             )
         
-        with col3:
+        with col4:
+            st.write("**간식2**")
+            snack2 = st.number_input(
+                "간식 (g)",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(existing_portions.get(f'day{day}_snack2', 0)),
+                step=1.0,
+                key=f"day{day}_snack2"
+            )
+        
+        with col5:
             st.write("**저녁**")
             dinner_rice = st.number_input(
                 "밥/죽 (g)",
@@ -474,12 +496,14 @@ def show_page2_meal_portions():
             f'day{day}_breakfast_side1': breakfast_side1,
             f'day{day}_breakfast_side2': breakfast_side2,
             f'day{day}_breakfast_kimchi': breakfast_kimchi,
+            f'day{day}_snack1': snack1,
             f'day{day}_lunch_rice': lunch_rice,
             f'day{day}_lunch_soup': lunch_soup,
             f'day{day}_lunch_main': lunch_main,
             f'day{day}_lunch_side1': lunch_side1,
             f'day{day}_lunch_side2': lunch_side2,
             f'day{day}_lunch_kimchi': lunch_kimchi,
+            f'day{day}_snack2': snack2,
             f'day{day}_dinner_rice': dinner_rice,
             f'day{day}_dinner_soup': dinner_soup,
             f'day{day}_dinner_main': dinner_main,
@@ -491,7 +515,9 @@ def show_page2_meal_portions():
         # 일일 총량 표시
         daily_total = (
             breakfast_rice + breakfast_soup + breakfast_main + breakfast_side1 + breakfast_side2 + breakfast_kimchi +
+            snack1 +
             lunch_rice + lunch_soup + lunch_main + lunch_side1 + lunch_side2 + lunch_kimchi +
+            snack2 +
             dinner_rice + dinner_soup + dinner_main + dinner_side1 + dinner_side2 + dinner_kimchi
         )
         st.metric(f"{day}일차 총 제공량", f"{daily_total:.0f}g")
@@ -575,6 +601,16 @@ def show_page3_plate_waste_visual():
         
         st.markdown("---")
         
+        # 간식1
+        st.markdown("#### 🍪 간식1")
+        snack1_waste = create_food_waste_selector(
+            "간식", 
+            f"day{day}_snack1_waste",
+            int(existing_waste.get(f'day{day}_snack1_waste', 0))
+        )
+        
+        st.markdown("---")
+        
         # 점심 식사
         st.markdown("#### ☀️ 점심")
         lunch_rice_waste = create_food_waste_selector(
@@ -606,6 +642,16 @@ def show_page3_plate_waste_visual():
             "김치", 
             f"day{day}_lunch_kimchi_waste",
             int(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0))
+        )
+        
+        st.markdown("---")
+        
+        # 간식2
+        st.markdown("#### 🍪 간식2")
+        snack2_waste = create_food_waste_selector(
+            "간식", 
+            f"day{day}_snack2_waste",
+            int(existing_waste.get(f'day{day}_snack2_waste', 0))
         )
         
         st.markdown("---")
@@ -651,12 +697,14 @@ def show_page3_plate_waste_visual():
             f'day{day}_breakfast_side1_waste': breakfast_side1_waste,
             f'day{day}_breakfast_side2_waste': breakfast_side2_waste,
             f'day{day}_breakfast_kimchi_waste': breakfast_kimchi_waste,
+            f'day{day}_snack1_waste': snack1_waste,
             f'day{day}_lunch_rice_waste': lunch_rice_waste,
             f'day{day}_lunch_soup_waste': lunch_soup_waste,
             f'day{day}_lunch_main_waste': lunch_main_waste,
             f'day{day}_lunch_side1_waste': lunch_side1_waste,
             f'day{day}_lunch_side2_waste': lunch_side2_waste,
             f'day{day}_lunch_kimchi_waste': lunch_kimchi_waste,
+            f'day{day}_snack2_waste': snack2_waste,
             f'day{day}_dinner_rice_waste': dinner_rice_waste,
             f'day{day}_dinner_soup_waste': dinner_soup_waste,
             f'day{day}_dinner_main_waste': dinner_main_waste,
@@ -673,12 +721,14 @@ def show_page3_plate_waste_visual():
             'breakfast_side1': (breakfast_side1_waste, f'day{day}_breakfast_side1'),
             'breakfast_side2': (breakfast_side2_waste, f'day{day}_breakfast_side2'),
             'breakfast_kimchi': (breakfast_kimchi_waste, f'day{day}_breakfast_kimchi'),
+            'snack1': (snack1_waste, f'day{day}_snack1'),
             'lunch_rice': (lunch_rice_waste, f'day{day}_lunch_rice'),
             'lunch_soup': (lunch_soup_waste, f'day{day}_lunch_soup'),
             'lunch_main': (lunch_main_waste, f'day{day}_lunch_main'),
             'lunch_side1': (lunch_side1_waste, f'day{day}_lunch_side1'),
             'lunch_side2': (lunch_side2_waste, f'day{day}_lunch_side2'),
             'lunch_kimchi': (lunch_kimchi_waste, f'day{day}_lunch_kimchi'),
+            'snack2': (snack2_waste, f'day{day}_snack2'),
             'dinner_rice': (dinner_rice_waste, f'day{day}_dinner_rice'),
             'dinner_soup': (dinner_soup_waste, f'day{day}_dinner_soup'),
             'dinner_main': (dinner_main_waste, f'day{day}_dinner_main'),
