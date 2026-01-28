@@ -1184,7 +1184,6 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
                 if 'mna_score' in survey_data:
                     st.metric("MNA-SF 총점", f"{survey_data['mna_score']}/14점")
         
-        st.balloons()
         
         # 세션 초기화
         if 'basic_data' in st.session_state:
