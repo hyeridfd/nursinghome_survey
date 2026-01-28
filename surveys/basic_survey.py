@@ -1,6 +1,13 @@
 import streamlit as st
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo('Asia/Seoul')
+
+def get_kst_now():
+    """현재 한국 시간 반환"""
+    return datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 def show_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("📝 1. 기초 조사표 (건강설문 조사표)")
@@ -1031,7 +1038,7 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
-            'updated_at': datetime.now().isoformat()
+            'updated_at': get_kst_now()
         }
         
         # === 3단계: 기존 필드 추가 ===
@@ -1144,7 +1151,7 @@ def save_basic_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             supabase.table('survey_progress') \
                 .update({
                     'basic_survey_completed': True,
-                    'last_updated': datetime.now().isoformat()
+                    'last_updated': get_kst_now()
                 }) \
                 .eq('elderly_id', elderly_id) \
                 .execute()
