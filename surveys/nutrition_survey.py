@@ -7,7 +7,7 @@ KST = ZoneInfo('Asia/Seoul')
 
 def get_kst_now():
     """현재 한국 시간 반환 (ISO 8601 형식)"""
-    return datetime.now(KST).isoformat(
+    return datetime.now(KST).isoformat()
 
 def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("🥗 2. 영양 조사표")
@@ -564,7 +564,7 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
-            'updated_at': datetime.now().isoformat()
+            'updated_at': get_kst_now()
         })
         
         # 기존 데이터 확인
@@ -580,7 +580,7 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         # 진행 상황 업데이트
         supabase.table('survey_progress').update({
             'nutrition_survey_completed': True,
-            'last_updated': datetime.now().isoformat()
+            'last_updated': get_kst_now()
         }).eq('elderly_id', elderly_id).execute()
         
         st.success("✅ 영양 조사표가 저장되었습니다!")
