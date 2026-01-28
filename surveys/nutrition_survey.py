@@ -188,7 +188,7 @@ def show_page2_meal_portions():
         with col1:
             st.write("**아침**")
             breakfast_rice = st.number_input(
-                "밥 (g)",
+                "밥/죽 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_breakfast_rice', 0)),
@@ -239,7 +239,7 @@ def show_page2_meal_portions():
         with col2:
             st.write("**점심**")
             lunch_rice = st.number_input(
-                "밥 (g)",
+                "밥/죽 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_lunch_rice', 0)),
@@ -290,7 +290,7 @@ def show_page2_meal_portions():
         with col3:
             st.write("**저녁**")
             dinner_rice = st.number_input(
-                "밥 (g)",
+                "밥/죽 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_dinner_rice', 0)),
@@ -405,7 +405,7 @@ def show_page3_plate_waste():
         with col1:
             st.write("**아침 잔반**")
             breakfast_rice_waste = st.number_input(
-                "밥 잔반 (g)",
+                "밥/죽 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_breakfast_rice_waste', 0)),
@@ -456,7 +456,7 @@ def show_page3_plate_waste():
         with col2:
             st.write("**점심 잔반**")
             lunch_rice_waste = st.number_input(
-                "밥 잔반 (g)",
+                "밥/죽 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_lunch_rice_waste', 0)),
@@ -507,7 +507,7 @@ def show_page3_plate_waste():
         with col3:
             st.write("**저녁 잔반**")
             dinner_rice_waste = st.number_input(
-                "밥 잔반 (g)",
+                "밥/죽 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_dinner_rice_waste', 0)),
