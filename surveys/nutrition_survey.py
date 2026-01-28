@@ -131,7 +131,7 @@ def create_food_waste_selector(label, key, default_value=0):
         </svg>"""
     ]
     
-    labels = ["0. 다 먹음", "1. 조금", "2. 반", "3. 대부분", "4. 모두"]
+    labels = ["0. 다 먹음", "1. 조금 남김", "2. 반 정도 남김", "3. 대부분 남김", "4. 모두 남김"]
     
     # 5개 컬럼으로 원형 이미지 배치
     cols = st.columns(5)
