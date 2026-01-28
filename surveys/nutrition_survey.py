@@ -35,6 +35,125 @@ def show_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     elif st.session_state.nutrition_page == 4:
         show_page4(supabase, elderly_id, surveyor_id, nursing_home_id)  # MNA-SF 및 제출
 
+def create_visual_guide():
+    """목측법 원형 가이드 생성"""
+    st.markdown("""
+    <style>
+    .visual-guide {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 20px;
+        background-color: #f0f2f6;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .visual-item {
+        text-align: center;
+        flex: 1;
+    }
+    .visual-item svg {
+        width: 80px;
+        height: 80px;
+    }
+    .visual-label {
+        margin-top: 10px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    </style>
+    
+    <div class="visual-guide">
+        <div class="visual-item">
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+            </svg>
+            <div class="visual-label">0. 다 먹음</div>
+        </div>
+        <div class="visual-item">
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 0 1 81.8 81.8 Z" fill="#2c3e50"/>
+            </svg>
+            <div class="visual-label">1. 조금 남김<br/>(약 25%)</div>
+        </div>
+        <div class="visual-item">
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 0 1 95 50 Z" fill="#2c3e50"/>
+            </svg>
+            <div class="visual-label">2. 반 정도 남김<br/>(약 50%)</div>
+        </div>
+        <div class="visual-item">
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+                <path d="M 50 50 L 50 5 A 45 45 0 1 1 18.2 18.2 Z" fill="#2c3e50"/>
+            </svg>
+            <div class="visual-label">3. 대부분 남김<br/>(약 75%)</div>
+        </div>
+        <div class="visual-item">
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="#2c3e50" stroke="#333" stroke-width="2"/>
+            </svg>
+            <div class="visual-label">4. 모두 남김<br/>(100%)</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def create_food_waste_selector(label, key, default_value=0):
+    """음식별 잔반량 선택기 (원형 이미지 포함)"""
+    st.markdown(f"**{label}**")
+    
+    # SVG 원형 이미지 정의
+    circles = [
+        # 0. 다 먹음
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+        </svg>""",
+        # 1. 조금 남김 (25%)
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+            <path d="M 50 50 L 50 5 A 45 45 0 0 1 81.8 81.8 Z" fill="#2c3e50"/>
+        </svg>""",
+        # 2. 반 정도 남김 (50%)
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+            <path d="M 50 50 L 50 5 A 45 45 0 0 1 95 50 Z" fill="#2c3e50"/>
+        </svg>""",
+        # 3. 대부분 남김 (75%)
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="white" stroke="#333" stroke-width="2"/>
+            <path d="M 50 50 L 50 5 A 45 45 0 1 1 18.2 18.2 Z" fill="#2c3e50"/>
+        </svg>""",
+        # 4. 모두 남김 (100%)
+        """<svg viewBox="0 0 100 100" style="width:60px;height:60px">
+            <circle cx="50" cy="50" r="45" fill="#2c3e50" stroke="#333" stroke-width="2"/>
+        </svg>"""
+    ]
+    
+    labels = ["0. 다 먹음", "1. 조금", "2. 반", "3. 대부분", "4. 모두"]
+    
+    # 원형 이미지를 먼저 표시
+    st.markdown(f"""
+    <div style="display: flex; justify-content: space-around; margin: 10px 0;">
+        {''.join([f'<div style="text-align: center; flex: 1;">{circle}<div style="font-size: 11px; margin-top: 5px; color: #666;">{label}</div></div>' 
+                  for circle, label in zip(circles, labels)])}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 라디오 버튼을 원형 이미지 아래에 배치
+    selected = st.radio(
+        label="선택",
+        options=[0, 1, 2, 3, 4],
+        format_func=lambda x: f"{x}",
+        horizontal=True,
+        key=key,
+        index=default_value,
+        label_visibility="collapsed"
+    )
+    
+    return selected
+
 def show_page1():
     """1페이지: 신체 활동 수준 조사 (IPAQ-SF)"""
     st.subheader("신체 활동 수준 조사 (IPAQ-SF)")
@@ -385,16 +504,13 @@ def show_page3_plate_waste_visual():
     """3페이지: 잔반량 조사 (5일) - 목측법"""
     st.subheader("잔반량 조사 (5일) - 목측법")
     
-    st.info("📝 5일간 남긴 음식의 양을 목측으로 선택해주세요.")
+    st.info("📝 5일간 남긴 음식의 양을 원형 이미지를 보고 선택해주세요.")
     
-    # 목측법 옵션 정의
-    visual_options = {
-        "0 - 다 먹음": 0.0,
-        "1 - 조금 남김 (약 25%)": 0.25,
-        "2 - 반 정도 남김 (약 50%)": 0.50,
-        "3 - 대부분 남김 (약 75%)": 0.75,
-        "4 - 모두 남김 (100%)": 1.0
-    }
+    # 상단에 가이드 표시
+    create_visual_guide()
+    
+    # 목측법 비율 정의
+    visual_ratios = [0.0, 0.25, 0.50, 0.75, 1.0]
     
     data = st.session_state.nutrition_data
     
@@ -415,151 +531,129 @@ def show_page3_plate_waste_visual():
     for day in range(1, 6):
         st.markdown(f"### 📅 {day}일차")
         
-        col1, col2, col3 = st.columns(3)
-        
         # 아침 식사
-        with col1:
-            st.write("**아침 잔반**")
-            
-            breakfast_rice_waste = st.selectbox(
-                "밥/죽",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_rice_waste', 0)),
-                key=f"day{day}_breakfast_rice_waste"
-            )
-            breakfast_soup_waste = st.selectbox(
-                "국/탕",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_soup_waste', 0)),
-                key=f"day{day}_breakfast_soup_waste"
-            )
-            breakfast_main_waste = st.selectbox(
-                "주찬",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_main_waste', 0)),
-                key=f"day{day}_breakfast_main_waste"
-            )
-            breakfast_side1_waste = st.selectbox(
-                "부찬1",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_side1_waste', 0)),
-                key=f"day{day}_breakfast_side1_waste"
-            )
-            breakfast_side2_waste = st.selectbox(
-                "부찬2",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_side2_waste', 0)),
-                key=f"day{day}_breakfast_side2_waste"
-            )
-            breakfast_kimchi_waste = st.selectbox(
-                "김치",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_breakfast_kimchi_waste', 0)),
-                key=f"day{day}_breakfast_kimchi_waste"
-            )
+        st.markdown("#### 🌅 아침")
+        breakfast_rice_waste = create_food_waste_selector(
+            "밥/죽", 
+            f"day{day}_breakfast_rice_waste",
+            int(existing_waste.get(f'day{day}_breakfast_rice_waste', 0))
+        )
+        breakfast_soup_waste = create_food_waste_selector(
+            "국/탕", 
+            f"day{day}_breakfast_soup_waste",
+            int(existing_waste.get(f'day{day}_breakfast_soup_waste', 0))
+        )
+        breakfast_main_waste = create_food_waste_selector(
+            "주찬", 
+            f"day{day}_breakfast_main_waste",
+            int(existing_waste.get(f'day{day}_breakfast_main_waste', 0))
+        )
+        breakfast_side1_waste = create_food_waste_selector(
+            "부찬1", 
+            f"day{day}_breakfast_side1_waste",
+            int(existing_waste.get(f'day{day}_breakfast_side1_waste', 0))
+        )
+        breakfast_side2_waste = create_food_waste_selector(
+            "부찬2", 
+            f"day{day}_breakfast_side2_waste",
+            int(existing_waste.get(f'day{day}_breakfast_side2_waste', 0))
+        )
+        breakfast_kimchi_waste = create_food_waste_selector(
+            "김치", 
+            f"day{day}_breakfast_kimchi_waste",
+            int(existing_waste.get(f'day{day}_breakfast_kimchi_waste', 0))
+        )
+        
+        st.markdown("---")
         
         # 점심 식사
-        with col2:
-            st.write("**점심 잔반**")
-            
-            lunch_rice_waste = st.selectbox(
-                "밥/죽",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_rice_waste', 0)),
-                key=f"day{day}_lunch_rice_waste"
-            )
-            lunch_soup_waste = st.selectbox(
-                "국/탕",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_soup_waste', 0)),
-                key=f"day{day}_lunch_soup_waste"
-            )
-            lunch_main_waste = st.selectbox(
-                "주찬",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_main_waste', 0)),
-                key=f"day{day}_lunch_main_waste"
-            )
-            lunch_side1_waste = st.selectbox(
-                "부찬1",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_side1_waste', 0)),
-                key=f"day{day}_lunch_side1_waste"
-            )
-            lunch_side2_waste = st.selectbox(
-                "부찬2",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_side2_waste', 0)),
-                key=f"day{day}_lunch_side2_waste"
-            )
-            lunch_kimchi_waste = st.selectbox(
-                "김치",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0)),
-                key=f"day{day}_lunch_kimchi_waste"
-            )
+        st.markdown("#### ☀️ 점심")
+        lunch_rice_waste = create_food_waste_selector(
+            "밥/죽", 
+            f"day{day}_lunch_rice_waste",
+            int(existing_waste.get(f'day{day}_lunch_rice_waste', 0))
+        )
+        lunch_soup_waste = create_food_waste_selector(
+            "국/탕", 
+            f"day{day}_lunch_soup_waste",
+            int(existing_waste.get(f'day{day}_lunch_soup_waste', 0))
+        )
+        lunch_main_waste = create_food_waste_selector(
+            "주찬", 
+            f"day{day}_lunch_main_waste",
+            int(existing_waste.get(f'day{day}_lunch_main_waste', 0))
+        )
+        lunch_side1_waste = create_food_waste_selector(
+            "부찬1", 
+            f"day{day}_lunch_side1_waste",
+            int(existing_waste.get(f'day{day}_lunch_side1_waste', 0))
+        )
+        lunch_side2_waste = create_food_waste_selector(
+            "부찬2", 
+            f"day{day}_lunch_side2_waste",
+            int(existing_waste.get(f'day{day}_lunch_side2_waste', 0))
+        )
+        lunch_kimchi_waste = create_food_waste_selector(
+            "김치", 
+            f"day{day}_lunch_kimchi_waste",
+            int(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0))
+        )
+        
+        st.markdown("---")
         
         # 저녁 식사
-        with col3:
-            st.write("**저녁 잔반**")
-            
-            dinner_rice_waste = st.selectbox(
-                "밥/죽",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_rice_waste', 0)),
-                key=f"day{day}_dinner_rice_waste"
-            )
-            dinner_soup_waste = st.selectbox(
-                "국/탕",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_soup_waste', 0)),
-                key=f"day{day}_dinner_soup_waste"
-            )
-            dinner_main_waste = st.selectbox(
-                "주찬",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_main_waste', 0)),
-                key=f"day{day}_dinner_main_waste"
-            )
-            dinner_side1_waste = st.selectbox(
-                "부찬1",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_side1_waste', 0)),
-                key=f"day{day}_dinner_side1_waste"
-            )
-            dinner_side2_waste = st.selectbox(
-                "부찬2",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_side2_waste', 0)),
-                key=f"day{day}_dinner_side2_waste"
-            )
-            dinner_kimchi_waste = st.selectbox(
-                "김치",
-                options=list(visual_options.keys()),
-                index=int(existing_waste.get(f'day{day}_dinner_kimchi_waste', 0)),
-                key=f"day{day}_dinner_kimchi_waste"
-            )
+        st.markdown("#### 🌙 저녁")
+        dinner_rice_waste = create_food_waste_selector(
+            "밥/죽", 
+            f"day{day}_dinner_rice_waste",
+            int(existing_waste.get(f'day{day}_dinner_rice_waste', 0))
+        )
+        dinner_soup_waste = create_food_waste_selector(
+            "국/탕", 
+            f"day{day}_dinner_soup_waste",
+            int(existing_waste.get(f'day{day}_dinner_soup_waste', 0))
+        )
+        dinner_main_waste = create_food_waste_selector(
+            "주찬", 
+            f"day{day}_dinner_main_waste",
+            int(existing_waste.get(f'day{day}_dinner_main_waste', 0))
+        )
+        dinner_side1_waste = create_food_waste_selector(
+            "부찬1", 
+            f"day{day}_dinner_side1_waste",
+            int(existing_waste.get(f'day{day}_dinner_side1_waste', 0))
+        )
+        dinner_side2_waste = create_food_waste_selector(
+            "부찬2", 
+            f"day{day}_dinner_side2_waste",
+            int(existing_waste.get(f'day{day}_dinner_side2_waste', 0))
+        )
+        dinner_kimchi_waste = create_food_waste_selector(
+            "김치", 
+            f"day{day}_dinner_kimchi_waste",
+            int(existing_waste.get(f'day{day}_dinner_kimchi_waste', 0))
+        )
         
         # 목측 레벨 저장 (0-4)
         plate_waste_visual.update({
-            f'day{day}_breakfast_rice_waste': list(visual_options.keys()).index(breakfast_rice_waste),
-            f'day{day}_breakfast_soup_waste': list(visual_options.keys()).index(breakfast_soup_waste),
-            f'day{day}_breakfast_main_waste': list(visual_options.keys()).index(breakfast_main_waste),
-            f'day{day}_breakfast_side1_waste': list(visual_options.keys()).index(breakfast_side1_waste),
-            f'day{day}_breakfast_side2_waste': list(visual_options.keys()).index(breakfast_side2_waste),
-            f'day{day}_breakfast_kimchi_waste': list(visual_options.keys()).index(breakfast_kimchi_waste),
-            f'day{day}_lunch_rice_waste': list(visual_options.keys()).index(lunch_rice_waste),
-            f'day{day}_lunch_soup_waste': list(visual_options.keys()).index(lunch_soup_waste),
-            f'day{day}_lunch_main_waste': list(visual_options.keys()).index(lunch_main_waste),
-            f'day{day}_lunch_side1_waste': list(visual_options.keys()).index(lunch_side1_waste),
-            f'day{day}_lunch_side2_waste': list(visual_options.keys()).index(lunch_side2_waste),
-            f'day{day}_lunch_kimchi_waste': list(visual_options.keys()).index(lunch_kimchi_waste),
-            f'day{day}_dinner_rice_waste': list(visual_options.keys()).index(dinner_rice_waste),
-            f'day{day}_dinner_soup_waste': list(visual_options.keys()).index(dinner_soup_waste),
-            f'day{day}_dinner_main_waste': list(visual_options.keys()).index(dinner_main_waste),
-            f'day{day}_dinner_side1_waste': list(visual_options.keys()).index(dinner_side1_waste),
-            f'day{day}_dinner_side2_waste': list(visual_options.keys()).index(dinner_side2_waste),
-            f'day{day}_dinner_kimchi_waste': list(visual_options.keys()).index(dinner_kimchi_waste)
+            f'day{day}_breakfast_rice_waste': breakfast_rice_waste,
+            f'day{day}_breakfast_soup_waste': breakfast_soup_waste,
+            f'day{day}_breakfast_main_waste': breakfast_main_waste,
+            f'day{day}_breakfast_side1_waste': breakfast_side1_waste,
+            f'day{day}_breakfast_side2_waste': breakfast_side2_waste,
+            f'day{day}_breakfast_kimchi_waste': breakfast_kimchi_waste,
+            f'day{day}_lunch_rice_waste': lunch_rice_waste,
+            f'day{day}_lunch_soup_waste': lunch_soup_waste,
+            f'day{day}_lunch_main_waste': lunch_main_waste,
+            f'day{day}_lunch_side1_waste': lunch_side1_waste,
+            f'day{day}_lunch_side2_waste': lunch_side2_waste,
+            f'day{day}_lunch_kimchi_waste': lunch_kimchi_waste,
+            f'day{day}_dinner_rice_waste': dinner_rice_waste,
+            f'day{day}_dinner_soup_waste': dinner_soup_waste,
+            f'day{day}_dinner_main_waste': dinner_main_waste,
+            f'day{day}_dinner_side1_waste': dinner_side1_waste,
+            f'day{day}_dinner_side2_waste': dinner_side2_waste,
+            f'day{day}_dinner_kimchi_waste': dinner_kimchi_waste
         })
         
         # 그램 단위로 변환 (제공량 × 잔반 비율)
@@ -587,7 +681,7 @@ def show_page3_plate_waste_visual():
         daily_waste_g = 0
         for item_name, (waste_level, portion_key) in waste_items.items():
             portion_amount = meal_portions_data.get(portion_key, 0)
-            waste_ratio = visual_options[waste_level]
+            waste_ratio = visual_ratios[waste_level]
             waste_g = portion_amount * waste_ratio
             plate_waste_grams[f'day{day}_{item_name}_waste'] = waste_g
             daily_waste_g += waste_g
