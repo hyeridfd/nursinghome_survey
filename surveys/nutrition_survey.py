@@ -471,10 +471,8 @@ def show_page3_plate_waste_visual():
     if isinstance(meal_portions_data, str):
         meal_portions_data = json.loads(meal_portions_data) if meal_portions_data else {}
     
-    # 기존 잔반 데이터 불러오기
-    existing_waste = data.get('plate_waste_visual', {})
-    if isinstance(existing_waste, str):
-        existing_waste = json.loads(existing_waste) if existing_waste else {}
+    # 기존 잔반 데이터 불러오기 (목측 레벨은 세션 임시 저장소에서)
+    existing_waste = st.session_state.get('plate_waste_visual_temp', {})
     
     plate_waste_visual = {}
     plate_waste_grams = {}
@@ -588,9 +586,13 @@ def show_page3_plate_waste_visual():
         intake_rate = ((total_portions - total_waste) / total_portions * 100) if total_portions > 0 else 0
         st.metric("평균 섭취율", f"{intake_rate:.1f}%")
     
-    # 데이터 저장
-    st.session_state.nutrition_data['plate_waste_visual'] = json.dumps(plate_waste_visual, ensure_ascii=False)
+    # 데이터 저장 (그램 단위만 DB에 저장)
     st.session_state.nutrition_data['plate_waste'] = json.dumps(plate_waste_grams, ensure_ascii=False)
+    
+    # 목측 레벨은 세션에만 임시 저장 (UI 상태 유지용, DB에는 저장하지 않음)
+    if 'plate_waste_visual_temp' not in st.session_state:
+        st.session_state['plate_waste_visual_temp'] = {}
+    st.session_state['plate_waste_visual_temp'] = plate_waste_visual
     
     navigation_buttons()
 
@@ -774,6 +776,8 @@ def show_page4(supabase, elderly_id, surveyor_id, nursing_home_id):
                 del st.session_state.nutrition_data
             if 'nutrition_page' in st.session_state:
                 del st.session_state.nutrition_page
+            if 'plate_waste_visual_temp' in st.session_state:
+                del st.session_state['plate_waste_visual_temp']
             st.session_state.current_survey = None
             st.rerun()
     
@@ -785,6 +789,11 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     """설문 데이터 저장"""
     try:
         data = st.session_state.nutrition_data.copy()
+        
+        # DB에 존재하지 않는 컬럼 제거
+        if 'plate_waste_visual' in data:
+            del data['plate_waste_visual']
+        
         data.update({
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
@@ -813,6 +822,8 @@ def save_nutrition_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
         # 세션 초기화
         del st.session_state.nutrition_data
         del st.session_state.nutrition_page
+        if 'plate_waste_visual_temp' in st.session_state:
+            del st.session_state['plate_waste_visual_temp']
         st.session_state.current_survey = None
         
         st.balloons()
@@ -840,6 +851,8 @@ def navigation_buttons():
                 del st.session_state.nutrition_data
             if 'nutrition_page' in st.session_state:
                 del st.session_state.nutrition_page
+            if 'plate_waste_visual_temp' in st.session_state:
+                del st.session_state['plate_waste_visual_temp']
             st.session_state.current_survey = None
             st.rerun()
     
