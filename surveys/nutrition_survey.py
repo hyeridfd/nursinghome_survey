@@ -308,221 +308,105 @@ def show_page2_meal_portions():
     meal_portions = {}
     
     # 탭 생성
-    tabs = st.tabs(["📅 1일차", "📅 2일차", "📅 3일차", "📅 4일차", "📅 5일차"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📅 1일차", "📅 2일차", "📅 3일차", "📅 4일차", "📅 5일차"])
     
-    # 각 탭별로 조사
-    for tab_idx, tab in enumerate(tabs):
-        day = tab_idx + 1
+    # 1일차
+    with tab1:
+        day = 1
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.write("**아침**")
+            breakfast_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_rice', 0)), step=1.0, key=f"day{day}_breakfast_rice")
+            breakfast_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_soup', 0)), step=1.0, key=f"day{day}_breakfast_soup")
+            breakfast_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_main', 0)), step=1.0, key=f"day{day}_breakfast_main")
+            breakfast_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_side1', 0)), step=1.0, key=f"day{day}_breakfast_side1")
+            breakfast_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_side2', 0)), step=1.0, key=f"day{day}_breakfast_side2")
+            breakfast_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_kimchi', 0)), step=1.0, key=f"day{day}_breakfast_kimchi")
+        with col2:
+            st.write("**간식1**")
+            snack1 = st.number_input("간식 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_snack1', 0)), step=1.0, key=f"day{day}_snack1")
+        with col3:
+            st.write("**점심**")
+            lunch_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_rice', 0)), step=1.0, key=f"day{day}_lunch_rice")
+            lunch_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_soup', 0)), step=1.0, key=f"day{day}_lunch_soup")
+            lunch_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_main', 0)), step=1.0, key=f"day{day}_lunch_main")
+            lunch_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_side1', 0)), step=1.0, key=f"day{day}_lunch_side1")
+            lunch_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_side2', 0)), step=1.0, key=f"day{day}_lunch_side2")
+            lunch_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_kimchi', 0)), step=1.0, key=f"day{day}_lunch_kimchi")
+        with col4:
+            st.write("**간식2**")
+            snack2 = st.number_input("간식 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_snack2', 0)), step=1.0, key=f"day{day}_snack2")
+        with col5:
+            st.write("**저녁**")
+            dinner_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_rice', 0)), step=1.0, key=f"day{day}_dinner_rice")
+            dinner_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_soup', 0)), step=1.0, key=f"day{day}_dinner_soup")
+            dinner_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_main', 0)), step=1.0, key=f"day{day}_dinner_main")
+            dinner_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_side1', 0)), step=1.0, key=f"day{day}_dinner_side1")
+            dinner_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_side2', 0)), step=1.0, key=f"day{day}_dinner_side2")
+            dinner_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_kimchi', 0)), step=1.0, key=f"day{day}_dinner_kimchi")
+        
+        meal_portions.update({
+            f'day{day}_breakfast_rice': breakfast_rice, f'day{day}_breakfast_soup': breakfast_soup, f'day{day}_breakfast_main': breakfast_main,
+            f'day{day}_breakfast_side1': breakfast_side1, f'day{day}_breakfast_side2': breakfast_side2, f'day{day}_breakfast_kimchi': breakfast_kimchi,
+            f'day{day}_snack1': snack1, f'day{day}_lunch_rice': lunch_rice, f'day{day}_lunch_soup': lunch_soup,
+            f'day{day}_lunch_main': lunch_main, f'day{day}_lunch_side1': lunch_side1, f'day{day}_lunch_side2': lunch_side2,
+            f'day{day}_lunch_kimchi': lunch_kimchi, f'day{day}_snack2': snack2, f'day{day}_dinner_rice': dinner_rice,
+            f'day{day}_dinner_soup': dinner_soup, f'day{day}_dinner_main': dinner_main, f'day{day}_dinner_side1': dinner_side1,
+            f'day{day}_dinner_side2': dinner_side2, f'day{day}_dinner_kimchi': dinner_kimchi
+        })
+        
+        daily_total = breakfast_rice + breakfast_soup + breakfast_main + breakfast_side1 + breakfast_side2 + breakfast_kimchi + snack1 + lunch_rice + lunch_soup + lunch_main + lunch_side1 + lunch_side2 + lunch_kimchi + snack2 + dinner_rice + dinner_soup + dinner_main + dinner_side1 + dinner_side2 + dinner_kimchi
+        st.markdown("---")
+        st.metric(f"{day}일차 총 제공량", f"{daily_total:.0f}g")
+    
+    # 2일차부터 5일차까지 동일한 구조로 반복
+    for day, tab in [(2, tab2), (3, tab3), (4, tab4), (5, tab5)]:
         with tab:
             col1, col2, col3, col4, col5 = st.columns(5)
             
             with col1:
                 st.write("**아침**")
-                breakfast_rice = st.number_input(
-                    "밥/죽 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_rice', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_rice"
-                )
-                breakfast_soup = st.number_input(
-                    "국/탕 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_soup', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_soup"
-                )
-                breakfast_main = st.number_input(
-                    "주찬 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_main', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_main"
-                )
-                breakfast_side1 = st.number_input(
-                    "부찬1 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_side1', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_side1"
-                )
-                breakfast_side2 = st.number_input(
-                    "부찬2 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_side2', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_side2"
-                )
-                breakfast_kimchi = st.number_input(
-                    "김치 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_breakfast_kimchi', 0)),
-                    step=1.0,
-                    key=f"day{day}_breakfast_kimchi"
-                )
-            
+                breakfast_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_rice', 0)), step=1.0, key=f"day{day}_breakfast_rice")
+                breakfast_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_soup', 0)), step=1.0, key=f"day{day}_breakfast_soup")
+                breakfast_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_main', 0)), step=1.0, key=f"day{day}_breakfast_main")
+                breakfast_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_side1', 0)), step=1.0, key=f"day{day}_breakfast_side1")
+                breakfast_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_side2', 0)), step=1.0, key=f"day{day}_breakfast_side2")
+                breakfast_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_breakfast_kimchi', 0)), step=1.0, key=f"day{day}_breakfast_kimchi")
             with col2:
                 st.write("**간식1**")
-                snack1 = st.number_input(
-                    "간식 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_snack1', 0)),
-                    step=1.0,
-                    key=f"day{day}_snack1"
-                )
-            
+                snack1 = st.number_input("간식 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_snack1', 0)), step=1.0, key=f"day{day}_snack1")
             with col3:
                 st.write("**점심**")
-                lunch_rice = st.number_input(
-                    "밥/죽 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_rice', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_rice"
-                )
-                lunch_soup = st.number_input(
-                    "국/탕 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_soup', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_soup"
-                )
-                lunch_main = st.number_input(
-                    "주찬 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_main', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_main"
-                )
-                lunch_side1 = st.number_input(
-                    "부찬1 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_side1', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_side1"
-                )
-                lunch_side2 = st.number_input(
-                    "부찬2 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_side2', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_side2"
-                )
-                lunch_kimchi = st.number_input(
-                    "김치 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_lunch_kimchi', 0)),
-                    step=1.0,
-                    key=f"day{day}_lunch_kimchi"
-                )
-            
+                lunch_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_rice', 0)), step=1.0, key=f"day{day}_lunch_rice")
+                lunch_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_soup', 0)), step=1.0, key=f"day{day}_lunch_soup")
+                lunch_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_main', 0)), step=1.0, key=f"day{day}_lunch_main")
+                lunch_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_side1', 0)), step=1.0, key=f"day{day}_lunch_side1")
+                lunch_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_side2', 0)), step=1.0, key=f"day{day}_lunch_side2")
+                lunch_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_lunch_kimchi', 0)), step=1.0, key=f"day{day}_lunch_kimchi")
             with col4:
                 st.write("**간식2**")
-                snack2 = st.number_input(
-                    "간식 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_snack2', 0)),
-                    step=1.0,
-                    key=f"day{day}_snack2"
-                )
-            
+                snack2 = st.number_input("간식 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_snack2', 0)), step=1.0, key=f"day{day}_snack2")
             with col5:
                 st.write("**저녁**")
-                dinner_rice = st.number_input(
-                    "밥/죽 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_rice', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_rice"
-                )
-                dinner_soup = st.number_input(
-                    "국/탕 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_soup', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_soup"
-                )
-                dinner_main = st.number_input(
-                    "주찬 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_main', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_main"
-                )
-                dinner_side1 = st.number_input(
-                    "부찬1 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_side1', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_side1"
-                )
-                dinner_side2 = st.number_input(
-                    "부찬2 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_side2', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_side2"
-                )
-                dinner_kimchi = st.number_input(
-                    "김치 (g)",
-                    min_value=0.0,
-                    max_value=1000.0,
-                    value=float(existing_portions.get(f'day{day}_dinner_kimchi', 0)),
-                    step=1.0,
-                    key=f"day{day}_dinner_kimchi"
-                )
+                dinner_rice = st.number_input("밥/죽 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_rice', 0)), step=1.0, key=f"day{day}_dinner_rice")
+                dinner_soup = st.number_input("국/탕 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_soup', 0)), step=1.0, key=f"day{day}_dinner_soup")
+                dinner_main = st.number_input("주찬 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_main', 0)), step=1.0, key=f"day{day}_dinner_main")
+                dinner_side1 = st.number_input("부찬1 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_side1', 0)), step=1.0, key=f"day{day}_dinner_side1")
+                dinner_side2 = st.number_input("부찬2 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_side2', 0)), step=1.0, key=f"day{day}_dinner_side2")
+                dinner_kimchi = st.number_input("김치 (g)", min_value=0.0, max_value=1000.0, value=float(existing_portions.get(f'day{day}_dinner_kimchi', 0)), step=1.0, key=f"day{day}_dinner_kimchi")
             
-            # 데이터 저장
             meal_portions.update({
-                f'day{day}_breakfast_rice': breakfast_rice,
-                f'day{day}_breakfast_soup': breakfast_soup,
-                f'day{day}_breakfast_main': breakfast_main,
-                f'day{day}_breakfast_side1': breakfast_side1,
-                f'day{day}_breakfast_side2': breakfast_side2,
-                f'day{day}_breakfast_kimchi': breakfast_kimchi,
-                f'day{day}_snack1': snack1,
-                f'day{day}_lunch_rice': lunch_rice,
-                f'day{day}_lunch_soup': lunch_soup,
-                f'day{day}_lunch_main': lunch_main,
-                f'day{day}_lunch_side1': lunch_side1,
-                f'day{day}_lunch_side2': lunch_side2,
-                f'day{day}_lunch_kimchi': lunch_kimchi,
-                f'day{day}_snack2': snack2,
-                f'day{day}_dinner_rice': dinner_rice,
-                f'day{day}_dinner_soup': dinner_soup,
-                f'day{day}_dinner_main': dinner_main,
-                f'day{day}_dinner_side1': dinner_side1,
-                f'day{day}_dinner_side2': dinner_side2,
-                f'day{day}_dinner_kimchi': dinner_kimchi
+                f'day{day}_breakfast_rice': breakfast_rice, f'day{day}_breakfast_soup': breakfast_soup, f'day{day}_breakfast_main': breakfast_main,
+                f'day{day}_breakfast_side1': breakfast_side1, f'day{day}_breakfast_side2': breakfast_side2, f'day{day}_breakfast_kimchi': breakfast_kimchi,
+                f'day{day}_snack1': snack1, f'day{day}_lunch_rice': lunch_rice, f'day{day}_lunch_soup': lunch_soup,
+                f'day{day}_lunch_main': lunch_main, f'day{day}_lunch_side1': lunch_side1, f'day{day}_lunch_side2': lunch_side2,
+                f'day{day}_lunch_kimchi': lunch_kimchi, f'day{day}_snack2': snack2, f'day{day}_dinner_rice': dinner_rice,
+                f'day{day}_dinner_soup': dinner_soup, f'day{day}_dinner_main': dinner_main, f'day{day}_dinner_side1': dinner_side1,
+                f'day{day}_dinner_side2': dinner_side2, f'day{day}_dinner_kimchi': dinner_kimchi
             })
             
-            # 일일 총량 표시
-            daily_total = (
-                breakfast_rice + breakfast_soup + breakfast_main + breakfast_side1 + breakfast_side2 + breakfast_kimchi +
-                snack1 +
-                lunch_rice + lunch_soup + lunch_main + lunch_side1 + lunch_side2 + lunch_kimchi +
-                snack2 +
-                dinner_rice + dinner_soup + dinner_main + dinner_side1 + dinner_side2 + dinner_kimchi
-            )
+            daily_total = breakfast_rice + breakfast_soup + breakfast_main + breakfast_side1 + breakfast_side2 + breakfast_kimchi + snack1 + lunch_rice + lunch_soup + lunch_main + lunch_side1 + lunch_side2 + lunch_kimchi + snack2 + dinner_rice + dinner_soup + dinner_main + dinner_side1 + dinner_side2 + dinner_kimchi
             st.markdown("---")
             st.metric(f"{day}일차 총 제공량", f"{daily_total:.0f}g")
     
@@ -566,160 +450,61 @@ def show_page3_plate_waste_visual():
     plate_waste_grams = {}
     
     # 탭 생성
-    tabs = st.tabs(["📅 1일차", "📅 2일차", "📅 3일차", "📅 4일차", "📅 5일차"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📅 1일차", "📅 2일차", "📅 3일차", "📅 4일차", "📅 5일차"])
     
-    # 각 탭별로 조사
-    for tab_idx, tab in enumerate(tabs):
-        day = tab_idx + 1
+    # 각 탭 처리 함수
+    def process_day_waste(day, tab):
         with tab:
             # 아침 식사
             st.markdown("#### 🌅 아침")
-            breakfast_rice_waste = create_food_waste_selector(
-                "밥/죽", 
-                f"day{day}_breakfast_rice_waste",
-                int(existing_waste.get(f'day{day}_breakfast_rice_waste', 0))
-            )
-            breakfast_soup_waste = create_food_waste_selector(
-                "국/탕", 
-                f"day{day}_breakfast_soup_waste",
-                int(existing_waste.get(f'day{day}_breakfast_soup_waste', 0))
-            )
-            breakfast_main_waste = create_food_waste_selector(
-                "주찬", 
-                f"day{day}_breakfast_main_waste",
-                int(existing_waste.get(f'day{day}_breakfast_main_waste', 0))
-            )
-            breakfast_side1_waste = create_food_waste_selector(
-                "부찬1", 
-                f"day{day}_breakfast_side1_waste",
-                int(existing_waste.get(f'day{day}_breakfast_side1_waste', 0))
-            )
-            breakfast_side2_waste = create_food_waste_selector(
-                "부찬2", 
-                f"day{day}_breakfast_side2_waste",
-                int(existing_waste.get(f'day{day}_breakfast_side2_waste', 0))
-            )
-            breakfast_kimchi_waste = create_food_waste_selector(
-                "김치", 
-                f"day{day}_breakfast_kimchi_waste",
-                int(existing_waste.get(f'day{day}_breakfast_kimchi_waste', 0))
-            )
+            breakfast_rice_waste = create_food_waste_selector("밥/죽", f"day{day}_breakfast_rice_waste", int(existing_waste.get(f'day{day}_breakfast_rice_waste', 0)))
+            breakfast_soup_waste = create_food_waste_selector("국/탕", f"day{day}_breakfast_soup_waste", int(existing_waste.get(f'day{day}_breakfast_soup_waste', 0)))
+            breakfast_main_waste = create_food_waste_selector("주찬", f"day{day}_breakfast_main_waste", int(existing_waste.get(f'day{day}_breakfast_main_waste', 0)))
+            breakfast_side1_waste = create_food_waste_selector("부찬1", f"day{day}_breakfast_side1_waste", int(existing_waste.get(f'day{day}_breakfast_side1_waste', 0)))
+            breakfast_side2_waste = create_food_waste_selector("부찬2", f"day{day}_breakfast_side2_waste", int(existing_waste.get(f'day{day}_breakfast_side2_waste', 0)))
+            breakfast_kimchi_waste = create_food_waste_selector("김치", f"day{day}_breakfast_kimchi_waste", int(existing_waste.get(f'day{day}_breakfast_kimchi_waste', 0)))
             
             st.markdown("---")
-            
-            # 간식1
             st.markdown("#### 🍪 간식1")
-            snack1_waste = create_food_waste_selector(
-                "간식", 
-                f"day{day}_snack1_waste",
-                int(existing_waste.get(f'day{day}_snack1_waste', 0))
-            )
+            snack1_waste = create_food_waste_selector("간식", f"day{day}_snack1_waste", int(existing_waste.get(f'day{day}_snack1_waste', 0)))
             
             st.markdown("---")
-            
-            # 점심 식사
             st.markdown("#### ☀️ 점심")
-            lunch_rice_waste = create_food_waste_selector(
-                "밥/죽", 
-                f"day{day}_lunch_rice_waste",
-                int(existing_waste.get(f'day{day}_lunch_rice_waste', 0))
-            )
-            lunch_soup_waste = create_food_waste_selector(
-                "국/탕", 
-                f"day{day}_lunch_soup_waste",
-                int(existing_waste.get(f'day{day}_lunch_soup_waste', 0))
-            )
-            lunch_main_waste = create_food_waste_selector(
-                "주찬", 
-                f"day{day}_lunch_main_waste",
-                int(existing_waste.get(f'day{day}_lunch_main_waste', 0))
-            )
-            lunch_side1_waste = create_food_waste_selector(
-                "부찬1", 
-                f"day{day}_lunch_side1_waste",
-                int(existing_waste.get(f'day{day}_lunch_side1_waste', 0))
-            )
-            lunch_side2_waste = create_food_waste_selector(
-                "부찬2", 
-                f"day{day}_lunch_side2_waste",
-                int(existing_waste.get(f'day{day}_lunch_side2_waste', 0))
-            )
-            lunch_kimchi_waste = create_food_waste_selector(
-                "김치", 
-                f"day{day}_lunch_kimchi_waste",
-                int(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0))
-            )
+            lunch_rice_waste = create_food_waste_selector("밥/죽", f"day{day}_lunch_rice_waste", int(existing_waste.get(f'day{day}_lunch_rice_waste', 0)))
+            lunch_soup_waste = create_food_waste_selector("국/탕", f"day{day}_lunch_soup_waste", int(existing_waste.get(f'day{day}_lunch_soup_waste', 0)))
+            lunch_main_waste = create_food_waste_selector("주찬", f"day{day}_lunch_main_waste", int(existing_waste.get(f'day{day}_lunch_main_waste', 0)))
+            lunch_side1_waste = create_food_waste_selector("부찬1", f"day{day}_lunch_side1_waste", int(existing_waste.get(f'day{day}_lunch_side1_waste', 0)))
+            lunch_side2_waste = create_food_waste_selector("부찬2", f"day{day}_lunch_side2_waste", int(existing_waste.get(f'day{day}_lunch_side2_waste', 0)))
+            lunch_kimchi_waste = create_food_waste_selector("김치", f"day{day}_lunch_kimchi_waste", int(existing_waste.get(f'day{day}_lunch_kimchi_waste', 0)))
             
             st.markdown("---")
-            
-            # 간식2
             st.markdown("#### 🍪 간식2")
-            snack2_waste = create_food_waste_selector(
-                "간식", 
-                f"day{day}_snack2_waste",
-                int(existing_waste.get(f'day{day}_snack2_waste', 0))
-            )
+            snack2_waste = create_food_waste_selector("간식", f"day{day}_snack2_waste", int(existing_waste.get(f'day{day}_snack2_waste', 0)))
             
             st.markdown("---")
-            
-            # 저녁 식사
             st.markdown("#### 🌙 저녁")
-            dinner_rice_waste = create_food_waste_selector(
-                "밥/죽", 
-                f"day{day}_dinner_rice_waste",
-                int(existing_waste.get(f'day{day}_dinner_rice_waste', 0))
-            )
-            dinner_soup_waste = create_food_waste_selector(
-                "국/탕", 
-                f"day{day}_dinner_soup_waste",
-                int(existing_waste.get(f'day{day}_dinner_soup_waste', 0))
-            )
-            dinner_main_waste = create_food_waste_selector(
-                "주찬", 
-                f"day{day}_dinner_main_waste",
-                int(existing_waste.get(f'day{day}_dinner_main_waste', 0))
-            )
-            dinner_side1_waste = create_food_waste_selector(
-                "부찬1", 
-                f"day{day}_dinner_side1_waste",
-                int(existing_waste.get(f'day{day}_dinner_side1_waste', 0))
-            )
-            dinner_side2_waste = create_food_waste_selector(
-                "부찬2", 
-                f"day{day}_dinner_side2_waste",
-                int(existing_waste.get(f'day{day}_dinner_side2_waste', 0))
-            )
-            dinner_kimchi_waste = create_food_waste_selector(
-                "김치", 
-                f"day{day}_dinner_kimchi_waste",
-                int(existing_waste.get(f'day{day}_dinner_kimchi_waste', 0))
-            )
+            dinner_rice_waste = create_food_waste_selector("밥/죽", f"day{day}_dinner_rice_waste", int(existing_waste.get(f'day{day}_dinner_rice_waste', 0)))
+            dinner_soup_waste = create_food_waste_selector("국/탕", f"day{day}_dinner_soup_waste", int(existing_waste.get(f'day{day}_dinner_soup_waste', 0)))
+            dinner_main_waste = create_food_waste_selector("주찬", f"day{day}_dinner_main_waste", int(existing_waste.get(f'day{day}_dinner_main_waste', 0)))
+            dinner_side1_waste = create_food_waste_selector("부찬1", f"day{day}_dinner_side1_waste", int(existing_waste.get(f'day{day}_dinner_side1_waste', 0)))
+            dinner_side2_waste = create_food_waste_selector("부찬2", f"day{day}_dinner_side2_waste", int(existing_waste.get(f'day{day}_dinner_side2_waste', 0)))
+            dinner_kimchi_waste = create_food_waste_selector("김치", f"day{day}_dinner_kimchi_waste", int(existing_waste.get(f'day{day}_dinner_kimchi_waste', 0)))
             
-            # 목측 레벨 저장 (0-4)
+            # 목측 레벨 저장
             plate_waste_visual.update({
-                f'day{day}_breakfast_rice_waste': breakfast_rice_waste,
-                f'day{day}_breakfast_soup_waste': breakfast_soup_waste,
-                f'day{day}_breakfast_main_waste': breakfast_main_waste,
-                f'day{day}_breakfast_side1_waste': breakfast_side1_waste,
-                f'day{day}_breakfast_side2_waste': breakfast_side2_waste,
-                f'day{day}_breakfast_kimchi_waste': breakfast_kimchi_waste,
-                f'day{day}_snack1_waste': snack1_waste,
-                f'day{day}_lunch_rice_waste': lunch_rice_waste,
-                f'day{day}_lunch_soup_waste': lunch_soup_waste,
-                f'day{day}_lunch_main_waste': lunch_main_waste,
-                f'day{day}_lunch_side1_waste': lunch_side1_waste,
-                f'day{day}_lunch_side2_waste': lunch_side2_waste,
-                f'day{day}_lunch_kimchi_waste': lunch_kimchi_waste,
-                f'day{day}_snack2_waste': snack2_waste,
-                f'day{day}_dinner_rice_waste': dinner_rice_waste,
-                f'day{day}_dinner_soup_waste': dinner_soup_waste,
-                f'day{day}_dinner_main_waste': dinner_main_waste,
-                f'day{day}_dinner_side1_waste': dinner_side1_waste,
-                f'day{day}_dinner_side2_waste': dinner_side2_waste,
-                f'day{day}_dinner_kimchi_waste': dinner_kimchi_waste
+                f'day{day}_breakfast_rice_waste': breakfast_rice_waste, f'day{day}_breakfast_soup_waste': breakfast_soup_waste,
+                f'day{day}_breakfast_main_waste': breakfast_main_waste, f'day{day}_breakfast_side1_waste': breakfast_side1_waste,
+                f'day{day}_breakfast_side2_waste': breakfast_side2_waste, f'day{day}_breakfast_kimchi_waste': breakfast_kimchi_waste,
+                f'day{day}_snack1_waste': snack1_waste, f'day{day}_lunch_rice_waste': lunch_rice_waste,
+                f'day{day}_lunch_soup_waste': lunch_soup_waste, f'day{day}_lunch_main_waste': lunch_main_waste,
+                f'day{day}_lunch_side1_waste': lunch_side1_waste, f'day{day}_lunch_side2_waste': lunch_side2_waste,
+                f'day{day}_lunch_kimchi_waste': lunch_kimchi_waste, f'day{day}_snack2_waste': snack2_waste,
+                f'day{day}_dinner_rice_waste': dinner_rice_waste, f'day{day}_dinner_soup_waste': dinner_soup_waste,
+                f'day{day}_dinner_main_waste': dinner_main_waste, f'day{day}_dinner_side1_waste': dinner_side1_waste,
+                f'day{day}_dinner_side2_waste': dinner_side2_waste, f'day{day}_dinner_kimchi_waste': dinner_kimchi_waste
             })
             
-            # 그램 단위로 변환 (제공량 × 잔반 비율)
+            # 그램 단위로 변환
             waste_items = {
                 'breakfast_rice': (breakfast_rice_waste, f'day{day}_breakfast_rice'),
                 'breakfast_soup': (breakfast_soup_waste, f'day{day}_breakfast_soup'),
@@ -751,24 +536,29 @@ def show_page3_plate_waste_visual():
                 plate_waste_grams[f'day{day}_{item_name}_waste'] = waste_g
                 daily_waste_g += waste_g
             
-            # 일일 총 잔반량 표시
             st.markdown("---")
             st.metric(f"{day}일차 총 잔반량", f"{daily_waste_g:.0f}g")
+    
+    # 각 탭 처리
+    process_day_waste(1, tab1)
+    process_day_waste(2, tab2)
+    process_day_waste(3, tab3)
+    process_day_waste(4, tab4)
+    process_day_waste(5, tab5)
     
     # 5일 총 잔반량 계산
     total_waste = sum(plate_waste_grams.values())
     st.markdown("---")
     st.subheader("📊 5일간 총 잔반량")
-    st.metric("총계", f"{total_waste:.0f}g", 
-             delta=f"1일 평균 {total_waste/5:.0f}g")
+    st.metric("총계", f"{total_waste:.0f}g", delta=f"1일 평균 {total_waste/5:.0f}g")
     
-    # 섭취율 계산 (제공량 대비)
+    # 섭취율 계산
     if meal_portions_data:
         total_portions = sum(meal_portions_data.values())
         intake_rate = ((total_portions - total_waste) / total_portions * 100) if total_portions > 0 else 0
         st.metric("평균 섭취율", f"{intake_rate:.1f}%")
     
-    # 데이터 저장 (목측 레벨과 그램 단위 모두 저장)
+    # 데이터 저장
     st.session_state.nutrition_data['plate_waste_visual'] = json.dumps(plate_waste_visual, ensure_ascii=False)
     st.session_state.nutrition_data['plate_waste'] = json.dumps(plate_waste_grams, ensure_ascii=False)
     
