@@ -298,6 +298,21 @@ def show_page2_meal_portions():
     
     st.info("📝 5일간 제공된 음식의 질량을 측정하여 기록해주세요. (단위: g)")
     
+    # 탭 크기 조정 CSS
+    st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 60px;
+        padding: 10px 24px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     data = st.session_state.nutrition_data
     
     # 기존 데이터 불러오기
@@ -427,6 +442,21 @@ def show_page3_plate_waste_visual():
     st.subheader("잔반량 조사 (5일) - 목측법")
     
     st.info("📝 5일간 남긴 음식의 양을 원형 이미지를 보고 선택해주세요.")
+    
+    # 탭 크기 조정 CSS
+    st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 60px;
+        padding: 10px 24px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # 상단에 가이드 표시
     create_visual_guide()
