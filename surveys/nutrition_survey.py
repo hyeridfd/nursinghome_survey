@@ -196,7 +196,7 @@ def show_page2_meal_portions():
                 key=f"day{day}_breakfast_rice"
             )
             breakfast_soup = st.number_input(
-                "국 (g)",
+                "국/탕 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_breakfast_soup', 0)),
@@ -247,7 +247,7 @@ def show_page2_meal_portions():
                 key=f"day{day}_lunch_rice"
             )
             lunch_soup = st.number_input(
-                "국 (g)",
+                "국/탕 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_lunch_soup', 0)),
@@ -298,7 +298,7 @@ def show_page2_meal_portions():
                 key=f"day{day}_dinner_rice"
             )
             dinner_soup = st.number_input(
-                "국 (g)",
+                "국/탕 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_portions.get(f'day{day}_dinner_soup', 0)),
@@ -413,7 +413,7 @@ def show_page3_plate_waste():
                 key=f"day{day}_breakfast_rice_waste"
             )
             breakfast_soup_waste = st.number_input(
-                "국 잔반 (g)",
+                "국/탕 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_breakfast_soup_waste', 0)),
@@ -464,7 +464,7 @@ def show_page3_plate_waste():
                 key=f"day{day}_lunch_rice_waste"
             )
             lunch_soup_waste = st.number_input(
-                "국 잔반 (g)",
+                "국/탕 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_lunch_soup_waste', 0)),
@@ -515,7 +515,7 @@ def show_page3_plate_waste():
                 key=f"day{day}_dinner_rice_waste"
             )
             dinner_soup_waste = st.number_input(
-                "국 잔반 (g)",
+                "국/탕 잔반 (g)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(existing_waste.get(f'day{day}_dinner_soup_waste', 0)),
