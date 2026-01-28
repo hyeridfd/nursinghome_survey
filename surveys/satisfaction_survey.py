@@ -1,6 +1,13 @@
 import streamlit as st
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo('Asia/Seoul')
+
+def get_kst_now():
+    """현재 한국 시간 반환"""
+    return datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 def show_satisfaction_survey(supabase, elderly_id, surveyor_id, nursing_home_id):
     st.title("😊 3. 만족도 및 선호도 조사표")
@@ -525,7 +532,7 @@ def save_satisfaction_survey(supabase, elderly_id, surveyor_id, nursing_home_id)
             'elderly_id': elderly_id,
             'surveyor_id': surveyor_id,
             'nursing_home_id': nursing_home_id,
-            'updated_at': datetime.now().isoformat()
+            'updated_at': get_kst_now()
         })
         
         # 기존 데이터 확인
@@ -541,7 +548,7 @@ def save_satisfaction_survey(supabase, elderly_id, surveyor_id, nursing_home_id)
         # 진행 상황 업데이트
         progress_update = {
             'satisfaction_survey_completed': True,
-            'last_updated': datetime.now().isoformat()
+            'last_updated': get_kst_now()
         }
         
         # 모든 설문 완료 여부 확인
