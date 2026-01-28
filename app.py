@@ -5,12 +5,19 @@ import sys
 from supabase import create_client, Client
 import pandas as pd
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # surveys 모듈 import
 from surveys.basic_survey import show_basic_survey
 from surveys.nutrition_survey import show_nutrition_survey
 from surveys.satisfaction_survey import show_satisfaction_survey
 
+KST = ZoneInfo('Asia/Seoul')
+
+def get_kst_now():
+    """현재 한국 시간 반환 (ISO 8601 형식)"""
+    return datetime.now(KST).isoformat()
+    
 # Supabase 초기화
 @st.cache_resource
 def init_supabase():
