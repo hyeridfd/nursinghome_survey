@@ -133,26 +133,35 @@ def create_food_waste_selector(label, key, default_value=0):
     
     labels = ["0. 다 먹음", "1. 조금", "2. 반", "3. 대부분", "4. 모두"]
     
-    # 원형 이미지를 먼저 표시
-    st.markdown(f"""
-    <div style="display: flex; justify-content: space-around; margin: 10px 0;">
-        {''.join([f'<div style="text-align: center; flex: 1;">{circle}<div style="font-size: 11px; margin-top: 5px; color: #666;">{label}</div></div>' 
-                  for circle, label in zip(circles, labels)])}
-    </div>
-    """, unsafe_allow_html=True)
+    # 5개 컬럼으로 원형 이미지 배치
+    cols = st.columns(5)
+    for i, (col, circle, label_text) in enumerate(zip(cols, circles, labels)):
+        with col:
+            st.markdown(f"""
+            <div style="text-align: center; margin-bottom: 8px;">
+                {circle}
+                <div style="font-size: 11px; margin-top: 5px; color: #666;">{label_text}</div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    # 라디오 버튼을 원형 이미지 아래에 배치
-    selected = st.radio(
-        label="선택",
-        options=[0, 1, 2, 3, 4],
-        format_func=lambda x: f"{x}",
-        horizontal=True,
-        key=key,
-        index=default_value,
-        label_visibility="collapsed"
-    )
+    # 라디오 버튼을 5개 컬럼으로 나누어 배치
+    radio_cols = st.columns(5)
     
-    return selected
+    # 임시로 선택 저장
+    if f"{key}_selected" not in st.session_state:
+        st.session_state[f"{key}_selected"] = default_value
+    
+    for i, col in enumerate(radio_cols):
+        with col:
+            button_type = "primary" if st.session_state[f"{key}_selected"] == i else "secondary"
+            if st.button(f"{i}", 
+                        key=f"{key}_radio_{i}", 
+                        use_container_width=True,
+                        type=button_type):
+                st.session_state[f"{key}_selected"] = i
+                st.rerun()
+    
+    return st.session_state[f"{key}_selected"]
 
 def show_page1():
     """1페이지: 신체 활동 수준 조사 (IPAQ-SF)"""
